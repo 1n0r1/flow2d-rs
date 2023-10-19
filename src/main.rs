@@ -1,5 +1,5 @@
 mod grid;
-mod space;
+mod space_domain;
 mod cell;
 
 use grid::Grid;
