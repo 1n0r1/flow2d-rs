@@ -1,17 +1,15 @@
-use super::space_domain::SpaceDomain;
-use super::cell::Cell;
-use super::cell::color;
+use crate::space_domain::SpaceDomain;
+use crate::cell::color;
+use crate::cell::Cell;
 
+use std::future::Future;
+use std::time::{Duration, Instant};
 
-use iced::Font;
-use iced::alignment;
 use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Text, Program};
-use iced::widget::text::LineHeight;
-use iced::widget::text::Shaping;
 use iced::{
     Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, Vector, mouse
 };
-use std::time::Duration;
+use iced::widget::canvas::event::{self, Event};
 
 
 #[derive(Debug, Clone)]
@@ -51,7 +49,6 @@ impl Grid {
             Message::Ticked {
                 tick_duration,
             } => {
-                self.space_domain.update();
                 self.next_cache.clear();
 
                 self.last_tick_duration = tick_duration;
@@ -65,11 +62,17 @@ impl Grid {
             .height(Length::Fill)
             .into()
     }
+
+    pub fn tick(&mut self, amount: usize) {
+        self.space_domain.tick(amount);
+        self.next_cache.clear();
+    }
 }
 
 
 impl Program<Message> for Grid {
     type State = ();
+
 
     fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
@@ -82,7 +85,6 @@ impl Program<Message> for Grid {
             let grid = self.grid_cache.draw(renderer, bounds.size(), |frame| {
                 self.draw_grid(frame);
             });
-    
             vec![cells, grid]
         }
     }
@@ -100,7 +102,6 @@ impl Grid {
             for (x, row) in self.space_domain.get_space().iter().enumerate() {
                 for (y, cell) in row.iter().enumerate() {
                     let reversed_y = row.len() - 1 - y;
-
                     frame.fill_rectangle(
                         Point::new(x as f32, reversed_y as f32),
                         Size::UNIT,
@@ -122,7 +123,7 @@ impl Grid {
             }
         });
     }
-    
+
     fn draw_grid(&self, frame: &mut Frame) {
         frame.scale(self.space_domain.get_cell_size() * 2.0);
 

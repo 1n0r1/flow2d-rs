@@ -1,4 +1,4 @@
-use super::cell::Cell;
+use crate::cell::Cell;
 
 
 #[derive(Debug, Clone)]
@@ -52,7 +52,15 @@ impl SpaceDomain {
         self.space_domain.clone()
     }
 
-    pub fn update(&self) {
-        println!("updating")
+    pub fn tick(&mut self, amount: usize) {
+        let rows = self.size[0] as usize;
+        let cols = self.size[1] as usize;
+
+        for row in 0..rows {
+            for col in 0..cols {
+                self.space_domain[row][col].tick(amount);
+            }
+        }
     }
+
 }

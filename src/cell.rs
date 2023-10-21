@@ -1,4 +1,3 @@
-
 use iced::Color;
 
 
@@ -17,16 +16,26 @@ pub enum Cell {
     BoundaryConditionCell,
 }
 
+impl Cell {
+    pub fn tick(&mut self, _: usize) {
+        match self {
+            Cell::FluidCell { pressure, .. } => {
+                let to_add = 1.00 as f32;
+                *pressure = *pressure + to_add;
+            }
+            _ => {}
+        }
+    }
+}
+
 pub fn color(cell: &Cell) -> Color {
     match cell {
         Cell::FreeCell => Color::WHITE,
         Cell::FluidCell { pressure, .. } => {
-            // Map the pressure to a full color spectrum
-            let hue: f32 = (pressure).max(0.0).min(360.0); // Map pressure to hue in degrees (0-360)
-            let saturation = 1.0; // Maximum saturation
-            let lightness = 0.5; // Medium lightness (you can adjust this)
-
-            // Convert HSL to RGB
+            let hue: f32 = (pressure).max(0.0).min(360.0);
+            let saturation = 1.0;
+            let lightness = 0.5;
+            
             let (r, g, b) = hsl_to_rgb(hue, saturation, lightness);
 
             Color::from_rgba(r, g, b, 1.0)

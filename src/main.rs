@@ -5,6 +5,8 @@ mod cell;
 use grid::Grid;
 
 
+use std::time::{Duration, Instant};
+
 use iced::executor;
 use iced::theme::{self, Theme};
 use iced::time;
@@ -15,7 +17,7 @@ use iced::window;
 use iced::{
     Alignment, Application, Command, Element, Length, Settings, Subscription,
 };
-use std::time::{Duration, Instant};
+
 
 pub fn main() -> iced::Result {
     EulerFluidSimulation::run(Settings {
@@ -35,17 +37,16 @@ struct EulerFluidSimulation {
     queued_ticks: usize,
     speed: usize,
     next_speed: Option<usize>,
-    version: usize,
 }
 
 #[derive(Debug, Clone)]
 enum Message {
-    Grid(grid::Message, usize),
     Tick(Instant),
     TogglePlayback,
     ToggleGrid(bool),
     Next,
     SpeedChanged(f32),
+    None
 }
 
 impl Application for EulerFluidSimulation {
@@ -70,27 +71,9 @@ impl Application for EulerFluidSimulation {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::Grid(message, version) => {
-                if version == self.version {
-                    self.grid.update(message);
-                }
-            }
             Message::Tick(_) | Message::Next => {
                 self.queued_ticks = (self.queued_ticks + 1).min(self.speed);
-
-                // if let Some(task) = self.grid.tick(self.queued_ticks) {
-                //     if let Some(speed) = self.next_speed.take() {
-                //         self.speed = speed;
-                //     }
-
-                //     self.queued_ticks = 0;
-
-                //     let version = self.version;
-
-                //     return Command::perform(task, move |message| {
-                //         Message::Grid(message, version)
-                //     });
-                // }
+                self.grid.tick(self.queued_ticks);
             }
             Message::TogglePlayback => {
                 self.is_playing = !self.is_playing;
@@ -105,8 +88,8 @@ impl Application for EulerFluidSimulation {
                     self.speed = speed.round() as usize;
                 }
             }
+            Message::None => {}
         }
-
         Command::none()
     }
 
@@ -120,7 +103,6 @@ impl Application for EulerFluidSimulation {
     }
 
     fn view(&self) -> Element<Message> {
-        let version = self.version;
         let selected_speed = self.next_speed.unwrap_or(self.speed);
         let controls = view_controls(
             self.is_playing,
@@ -131,7 +113,9 @@ impl Application for EulerFluidSimulation {
         let content = column![
             self.grid
                 .view()
-                .map(move |message| Message::Grid(message, version)),
+                .map(move |_| {
+                    Message::None
+                }),
             controls,
         ];
 
