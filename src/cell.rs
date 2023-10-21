@@ -5,8 +5,7 @@ use iced::Color;
 pub enum Cell {
     FreeCell,
     FluidCell {
-        vertical_velocity: f32,
-        horizontal_velocity: f32,
+        velocity: [f32; 2],
         pressure: f32,
         temperature: f32,
         rhs: f32,
@@ -32,7 +31,7 @@ pub fn color(cell: &Cell) -> Color {
     match cell {
         Cell::FreeCell => Color::WHITE,
         Cell::FluidCell { pressure, .. } => {
-            let hue: f32 = (pressure).max(0.0).min(360.0);
+            let hue: f32 = pressure % 360.0;
             let saturation = 1.0;
             let lightness = 0.5;
             

@@ -2,20 +2,20 @@ use crate::cell::Cell;
 
 
 #[derive(Debug, Clone)]
-pub struct SpaceDomain {
+pub struct SpaceTimeDomain {
     space_domain: Vec<Vec<Cell>>,
-    size: [u32; 2],
-    cell_size: f32
+    space_size: [u32; 2],
+    delta_space: [f32; 2], // meters
+    delta_time: f32, // seconds
 }
 
-impl Default for SpaceDomain {
+impl Default for SpaceTimeDomain {
     fn default() -> Self {
         let x: usize = 20;
         let y: usize = 20;
         
         let mut space_domain = vec![vec![Cell::FluidCell {
-            vertical_velocity: 0.0,
-            horizontal_velocity: 0.0,
+            velocity: [0.0, 0.0],
             pressure: 0.0,
             temperature: 0.0,
             rhs: 0.0,
@@ -33,19 +33,20 @@ impl Default for SpaceDomain {
 
         Self {
             space_domain,
-            size: [x as u32, y as u32],
-            cell_size: 20.0,
+            space_size: [x as u32, y as u32],
+            delta_space: [1.0, 1.0],
+            delta_time: 0.1
         }
     }
 }
 
-impl SpaceDomain {
-    pub fn get_size(&self) -> [u32; 2] {
-        self.size
+impl SpaceTimeDomain {
+    pub fn get_space_size(&self) -> [u32; 2] {
+        self.space_size
     }
 
-    pub fn get_cell_size(&self) -> f32 {
-        self.cell_size
+    pub fn get_delta_space(&self) -> [f32; 2] {
+        self.delta_space
     }
 
     pub fn get_space(&self) -> Vec<Vec<Cell>> {
@@ -53,12 +54,9 @@ impl SpaceDomain {
     }
 
     pub fn tick(&mut self, amount: usize) {
-        let rows = self.size[0] as usize;
-        let cols = self.size[1] as usize;
-
-        for row in 0..rows {
-            for col in 0..cols {
-                self.space_domain[row][col].tick(amount);
+        for x in 0..self.space_size[0] {
+            for y in 0..self.space_size[1] {
+                self.space_domain[x as usize][y as usize].tick(amount);
             }
         }
     }

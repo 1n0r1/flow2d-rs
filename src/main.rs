@@ -1,5 +1,5 @@
 mod grid;
-mod space_domain;
+mod space_time_domain;
 mod cell;
 
 use grid::Grid;
@@ -36,7 +36,6 @@ struct EulerFluidSimulation {
     is_playing: bool,
     queued_ticks: usize,
     speed: usize,
-    next_speed: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -82,9 +81,7 @@ impl Application for EulerFluidSimulation {
                 self.grid.toggle_lines(show_grid_lines);
             }
             Message::SpeedChanged(speed) => {
-                if self.is_playing {
-                    self.next_speed = Some(speed.round() as usize);
-                } else {
+                if !self.is_playing {
                     self.speed = speed.round() as usize;
                 }
             }
@@ -103,7 +100,7 @@ impl Application for EulerFluidSimulation {
     }
 
     fn view(&self) -> Element<Message> {
-        let selected_speed = self.next_speed.unwrap_or(self.speed);
+        let selected_speed = self.speed;
         let controls = view_controls(
             self.is_playing,
             self.grid.are_lines_visible(),
