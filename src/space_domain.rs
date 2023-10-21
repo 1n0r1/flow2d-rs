@@ -1,7 +1,7 @@
 use super::cell::Cell;
 
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct SpaceDomain {
     space_domain: Vec<Vec<Cell>>,
     size: [u32; 2],

@@ -2,7 +2,7 @@
 use iced::Color;
 
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum Cell {
     FreeCell,
     FluidCell {
