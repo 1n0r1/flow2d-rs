@@ -89,7 +89,6 @@ impl SpaceTimeDomain {
     }
 
     pub fn tick(&mut self, amount: usize) {
-        self.set_boundary_conditions();
 
         for x in 0..self.space_size[0] {
             for y in 0..self.space_size[1] {
@@ -100,23 +99,39 @@ impl SpaceTimeDomain {
         self.time += self.delta_time*(amount as f32)
     }
 
+    
+    pub fn iterate_one_timestep(&mut self) {
+        self.set_boundary_conditions();
+        self.calculate_and_update_fg();
+
+        self.time += self.delta_time
+    }
+
 }
 
 
 impl SpaceTimeDomain {
-    fn calculate_and_update_fg(&mut self, amount: usize) {
+    fn calculate_and_update_fg(&mut self) {
         for x in 0..self.space_size[0] {
             for y in 0..self.space_size[1] {
                 match self.space_domain[x][y].cell_type {
                     CellType::FluidCell => {
-                        
-                        
+                        self.space_domain[x][y].f = self.space_domain[x][y].velocity[0]
+                        + self.delta_time*(
+                            (self.d2udx2(x, y) + self.d2udy2(x, y))/self.reynolds
+                            - self.du2dx(x, y) - self.duvdy(x, y) + self.acceleration[0]
+                        );
+
+                        self.space_domain[x][y].g= self.space_domain[x][y].velocity[1]
+                        + self.delta_time*(
+                            (self.d2vdx2(x, y) + self.d2vdy2(x, y))/self.reynolds
+                            - self.duvdx(x, y) - self.dv2dy(x, y) + self.acceleration[0]
+                        )
                     },
-                    _ => {}
+                    _ => {todo!()}
                 }
             }
         }
-        self.time += self.delta_time*(amount as f32)
     }
     
 
