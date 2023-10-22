@@ -71,7 +71,7 @@ impl Application for EulerFluidSimulation {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::Tick(_) | Message::Next => {
-                self.grid.tick(1);
+                self.grid.tick();
             }
             Message::TogglePlayback => {
                 self.is_playing = !self.is_playing;

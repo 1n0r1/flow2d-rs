@@ -37,8 +37,8 @@ impl Grid {
             .into()
     }
 
-    pub fn tick(&mut self, amount: usize) {
-        self.space_time_domain.tick(amount);
+    pub fn tick(&mut self) {
+        self.space_time_domain.iterate_one_timestep();
         self.next_cache.clear();
     }
 }
@@ -48,8 +48,10 @@ impl Program<()> for Grid {
     type State = ();
 
     fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
+        const GRID_SCALE: f32 = 10.0;
+        
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
-            frame.scale(40.0);
+            frame.scale(GRID_SCALE);
             self.draw_cells(frame);
         });
 
@@ -57,7 +59,7 @@ impl Program<()> for Grid {
             vec![cells]
         } else {
             let grid = self.grid_cache.draw(renderer, bounds.size(), |frame| {
-                frame.scale(40.0);
+                frame.scale(GRID_SCALE);
                 self.draw_grid(frame);
             });
             vec![cells, grid]
@@ -86,6 +88,16 @@ impl Grid {
                         Size::new(delta_x, delta_y),
                         color(cell),
                     );
+                    
+                    // let label = Text {
+                    //     content: format!("({}, {}, {})", cell.pressure, cell.f, cell.g),
+                    //     position: Point::new(pos_x, pos_y) + Vector::new(0.1, 0.1),
+                    //     color: Color::BLACK,
+                    //     size: 5.0,
+                    //     ..Text::default()
+                    // };
+                    
+                    // frame.fill_text(label);
                 }
             }
         });
