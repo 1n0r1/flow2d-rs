@@ -57,7 +57,7 @@ impl Application for EulerFluidSimulation {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Self {
-                speed: 5,
+                speed: 10,
                 ..Self::default()
             },
             Command::none(),

@@ -92,9 +92,10 @@ impl SpaceTimeDomain {
     
     pub fn iterate_one_timestep(&mut self) {
         self.set_boundary_conditions();
-        self.calculate_and_update_fg();
-        self.calculate_and_update_rhs();
+        self.update_fg();
+        self.update_rhs();
         self.solve_poisson_pressure_equation();
+        self.update_velocity();
 
         self.time += self.delta_time
     }
@@ -103,6 +104,37 @@ impl SpaceTimeDomain {
 
 
 impl SpaceTimeDomain {
+    fn update_velocity(&mut self) {
+        for x in 0..self.space_size[0] {
+            for y in 0..self.space_size[1] {
+                match self.space_domain[x][y].cell_type {
+                    CellType::FluidCell => {
+                        let right_cell_type: Option<CellType> = (x + 1 < self.space_size[0]).then(|| self.space_domain[x + 1][y].cell_type);
+                        let top_cell_type: Option<CellType> = (y + 1 < self.space_size[1]).then(|| self.space_domain[x][y + 1].cell_type);
+        
+                        if let Some(right_cell_type) = right_cell_type {
+                            if let CellType::BoundaryConditionCellType(_) = right_cell_type {
+                            
+                            } else {
+                                self.space_domain[x][y].velocity[0] = self.space_domain[x][y].f - self.delta_time*(self.space_domain[x + 1][y].pressure - self.space_domain[x][y].pressure)/self.delta_space[0]
+                            }
+                        }
+
+                        if let Some(top_cell_type) = top_cell_type {
+                            if let CellType::BoundaryConditionCellType(_) = top_cell_type {
+                            
+                            } else {
+                                self.space_domain[x][y].velocity[1] = self.space_domain[x][y].g - self.delta_time*(self.space_domain[x][y + 1].pressure - self.space_domain[x][y].pressure)/self.delta_space[1]
+                            }
+                            
+                        }
+                    },
+                    _ => {}
+                }
+
+            }
+        }
+    }
     
     fn solve_poisson_pressure_equation(&mut self) {
         for _ in 0..ITR_MAX {
@@ -186,7 +218,7 @@ impl SpaceTimeDomain {
         }
     }
 
-    fn calculate_and_update_rhs(&mut self) {
+    fn update_rhs(&mut self) {
         for x in 0..self.space_size[0] {
             for y in 0..self.space_size[1] {
                 match self.space_domain[x][y].cell_type {
@@ -200,7 +232,7 @@ impl SpaceTimeDomain {
         }
     }
 
-    fn calculate_and_update_fg(&mut self) {
+    fn update_fg(&mut self) {
         for x in 0..self.space_size[0] {
             for y in 0..self.space_size[1] {
                 match self.space_domain[x][y].cell_type {
