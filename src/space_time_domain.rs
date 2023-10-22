@@ -19,8 +19,8 @@ const POISSON_EPSILON: f32 = 0.001;
 
 impl Default for SpaceTimeDomain {
     fn default() -> Self {
-        let x: usize = 80;
-        let y: usize = 80;
+        let x: usize = 128;
+        let y: usize = 128;
         
         let mut space_domain = vec![vec![Cell {
             cell_type: CellType::FluidCell,
@@ -29,11 +29,12 @@ impl Default for SpaceTimeDomain {
             rhs: 0.0,
             f: 0.0,
             g: 0.0,
+            boundary_condition_velocity: [0.0, 0.0]
         }; y]; x];
         
         for xi in 0..x {
             for yi in 0..y {
-                if xi == 0 || xi == x - 1 || yi == 0 || yi == y - 1 {
+                if xi == 0 || xi == x - 1 || yi == 0 {
                     space_domain[xi][yi] = Cell {
                         cell_type: CellType::BoundaryConditionCellType(BoundaryConditionCellType::NoSlipCell),
                         velocity: [0.0, 0.0],
@@ -41,7 +42,19 @@ impl Default for SpaceTimeDomain {
                         rhs: 0.0,
                         f: 0.0,
                         g: 0.0,
+                        boundary_condition_velocity: [0.0, 0.0]
                     };
+                }
+                if yi == y - 1 {
+                    space_domain[xi][yi] = Cell {
+                        cell_type: CellType::BoundaryConditionCellType(BoundaryConditionCellType::NoSlipCell),
+                        velocity: [0.0, 0.0],
+                        pressure: 0.0,
+                        rhs: 0.0,
+                        f: 0.0,
+                        g: 0.0,
+                        boundary_condition_velocity: [1.0, 0.0]
+                    }
                 }
             }
         }
@@ -55,6 +68,7 @@ impl Default for SpaceTimeDomain {
                     rhs: 0.0,
                     f: 0.0,
                     g: 0.0,
+                    boundary_condition_velocity: [0.0, 0.0]
                 };
 
             }
@@ -65,10 +79,10 @@ impl Default for SpaceTimeDomain {
             space_domain,
             space_size: [x, y],
             time: 0.0,
-            delta_space: [1.0, 1.0],
-            delta_time: 0.02,
+            delta_space: [1.0/(x as f32), 1.0/(y as f32)],
+            delta_time: 0.01,
             reynolds: 1000.0,
-            acceleration: [0.0, -9.8]
+            acceleration: [0.0, 0.0]
         }
     }
 }
@@ -212,7 +226,9 @@ impl SpaceTimeDomain {
                             }
                         }
                     }
-                    self.space_domain[x][y].pressure = self.space_domain[x][y].pressure/(neighboring_fluid_count as f32);
+                    if neighboring_fluid_count != 0 {
+                        self.space_domain[x][y].pressure = self.space_domain[x][y].pressure/(neighboring_fluid_count as f32);
+                    }
                 }
             }
         }
@@ -223,8 +239,10 @@ impl SpaceTimeDomain {
             for y in 0..self.space_size[1] {
                 match self.space_domain[x][y].cell_type {
                     CellType::FluidCell => {
-                        self.space_domain[x][y].rhs = ((self.space_domain[x][y].f - self.space_domain[x - 1][y].f)/self.delta_space[0]
-                            + (self.space_domain[x][y].g - self.space_domain[x][y - 1].g)/self.delta_space[1])/self.delta_time;
+                        self.space_domain[x][y].rhs = (
+                            (self.space_domain[x][y].f - self.space_domain[x - 1][y].f)/self.delta_space[0]
+                            + (self.space_domain[x][y].g - self.space_domain[x][y - 1].g)/self.delta_space[1]
+                        )/self.delta_time;
                     },
                     _ => { }
                 }
@@ -297,7 +315,9 @@ impl SpaceTimeDomain {
                                 match left_cell_type {
                                     CellType::FluidCell => {
                                         self.space_domain[x - 1][y].velocity[0] = 0.0;
-                                        self.space_domain[x][y].velocity[1] = -self.space_domain[x - 1][y].velocity[1];
+                                        self.space_domain[x][y].velocity[1] = 
+                                            2.0*self.space_domain[x][y].boundary_condition_velocity[1]
+                                            - self.space_domain[x - 1][y].velocity[1];
 
                                         self.space_domain[x][y].pressure += self.space_domain[x - 1][y].pressure;
                                         neighboring_fluid_count += 1;
@@ -311,7 +331,10 @@ impl SpaceTimeDomain {
                             if let Some(right_cell_type) = right_cell_type {
                                 match right_cell_type {
                                     CellType::FluidCell => {
-                                        self.space_domain[x][y].velocity = [0.0, -self.space_domain[x + 1][y].velocity[1]];
+                                        self.space_domain[x][y].velocity = [
+                                            0.0, 
+                                            2.0*self.space_domain[x][y].boundary_condition_velocity[1] - self.space_domain[x + 1][y].velocity[1]
+                                        ];
 
                                         self.space_domain[x][y].pressure += self.space_domain[x + 1][y].pressure;
                                         neighboring_fluid_count += 1;
@@ -326,7 +349,9 @@ impl SpaceTimeDomain {
                                 match bottom_cell_type {
                                     CellType::FluidCell => {
                                         self.space_domain[x][y - 1].velocity[1] = 0.0;
-                                        self.space_domain[x][y].velocity[0] = -self.space_domain[x][y - 1].velocity[0];
+                                        self.space_domain[x][y].velocity[0] = 
+                                            2.0*self.space_domain[x][y].boundary_condition_velocity[0]
+                                            - self.space_domain[x][y - 1].velocity[0];
                                         
                                         self.space_domain[x][y].pressure += self.space_domain[x][y - 1].pressure;
                                         neighboring_fluid_count += 1;
@@ -340,7 +365,10 @@ impl SpaceTimeDomain {
                             if let Some(top_cell_type) = top_cell_type {
                                 match top_cell_type {
                                     CellType::FluidCell => {
-                                        self.space_domain[x][y].velocity = [-self.space_domain[x][y + 1].velocity[0], 0.0];
+                                        self.space_domain[x][y].velocity = [
+                                            2.0*self.space_domain[x][y].boundary_condition_velocity[0] - self.space_domain[x][y + 1].velocity[0],
+                                            0.0
+                                        ];
                                         
                                         self.space_domain[x][y].pressure += self.space_domain[x][y + 1].pressure;
                                         neighboring_fluid_count += 1;

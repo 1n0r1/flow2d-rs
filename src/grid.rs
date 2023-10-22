@@ -2,7 +2,7 @@ use crate::space_time_domain::SpaceTimeDomain;
 use crate::cell::Cell;
 use crate::cell::CellType;
 
-use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Text, Program};
+use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Text, Program, Stroke, Style};
 use iced::{
     Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, Vector, mouse
 };
@@ -12,6 +12,7 @@ use iced::{
 pub struct Grid {
     space_time_domain: SpaceTimeDomain,
     next_cache: Cache,
+    vector_cache: Cache,
     grid_cache: Cache,
     show_lines: bool,
 }
@@ -40,6 +41,7 @@ impl Grid {
     pub fn tick(&mut self) {
         self.space_time_domain.iterate_one_timestep();
         self.next_cache.clear();
+        self.vector_cache.clear();
     }
 }
 
@@ -48,21 +50,25 @@ impl Program<()> for Grid {
     type State = ();
 
     fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
-        const GRID_SCALE: f32 = 10.0;
+        const GRID_SCALE: f32 = 2000.0;
         
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
             frame.scale(GRID_SCALE);
             self.draw_cells(frame);
         });
+        let vectors = self.vector_cache.draw(renderer, bounds.size(), |frame| {
+            frame.scale(GRID_SCALE);
+            self.draw_velocity_vector(frame);
+        });
 
         if !self.show_lines {
-            vec![cells]
+            vec![cells, vectors]
         } else {
             let grid = self.grid_cache.draw(renderer, bounds.size(), |frame| {
                 frame.scale(GRID_SCALE);
                 self.draw_grid(frame);
             });
-            vec![cells, grid]
+            vec![cells, vectors, grid,]
         }
     }
 }
@@ -79,7 +85,6 @@ impl Grid {
             for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
                 for (y, cell) in row.iter().enumerate() {
                     let pos_x = delta_x*(x as f32);
-
                     let reversed_y = row.len() - 1 - y;
                     let pos_y = delta_y*(reversed_y as f32);
 
@@ -88,19 +93,36 @@ impl Grid {
                         Size::new(delta_x, delta_y),
                         color(cell),
                     );
-                    
-                    // let label = Text {
-                    //     content: format!("({}, {}, {})", cell.pressure, cell.f, cell.g),
-                    //     position: Point::new(pos_x, pos_y) + Vector::new(0.1, 0.1),
-                    //     color: Color::BLACK,
-                    //     size: 5.0,
-                    //     ..Text::default()
-                    // };
-                    
-                    // frame.fill_text(label);
                 }
             }
         });
+    }
+
+    fn draw_velocity_vector(&self, frame: &mut Frame) {
+        let delta_x = self.space_time_domain.get_delta_space()[0];
+        let delta_y = self.space_time_domain.get_delta_space()[1];
+        for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
+            for (y, cell) in row.iter().enumerate() {
+                let pos_x = delta_x*(x as f32);
+                let reversed_y = row.len() - 1 - y;
+                let pos_y = delta_y*(reversed_y as f32);
+                
+                let velocity_scale = 0.1;
+                let (u, v) = (cell.velocity[0], -cell.velocity[1]);
+
+                let vector_start = Point::new(pos_x, pos_y);
+                let vector_end = Point::new(
+                    pos_x + u * velocity_scale,
+                    pos_y + v * velocity_scale,
+                );
+
+                let vector = Path::line(vector_start, vector_end);
+                frame.stroke(&vector, Stroke {
+                    width: 1.0,
+                    ..Default::default()
+                });
+            }
+        }
     }
 
     fn draw_grid(&self, frame: &mut Frame) {
@@ -135,7 +157,7 @@ impl Grid {
 pub fn color(cell: &Cell) -> Color {
     match cell.cell_type {
         CellType::FluidCell => {
-            let hue: f32 = cell.pressure % 360.0;
+            let hue: f32 = (0.5 + cell.pressure)*500.0 % 360.0;
             let saturation = 1.0;
             let lightness = 0.5;
             
