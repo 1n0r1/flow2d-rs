@@ -1,9 +1,6 @@
 use crate::space_time_domain::SpaceTimeDomain;
-use crate::cell::color;
 use crate::cell::Cell;
-
-use std::future::Future;
-use std::time::{Duration, Instant};
+use crate::cell::CellType;
 
 use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Text, Program};
 use iced::{
@@ -29,6 +26,10 @@ impl Grid {
         self.show_lines = enabled;
     }
 
+    pub fn get_time(&self) -> f32{
+        self.space_time_domain.get_time()
+    }
+
     pub fn view(&self) -> Element<()> {
         Canvas::new(self)
             .width(Length::Fill)
@@ -45,7 +46,6 @@ impl Grid {
 
 impl Program<()> for Grid {
     type State = ();
-
 
     fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
@@ -86,18 +86,6 @@ impl Grid {
                         Size::new(delta_x, delta_y),
                         color(cell),
                     );
-                    let cell_position = Point::new(pos_x, pos_y); 
-                    let label_position = cell_position + Vector::new(0.1, 0.1);
-                    let label_text = format!("({}, {})", x, y);
-                    let label = Text {
-                        content: label_text,
-                        position: label_position,
-                        color: Color::BLACK,
-                        size: 10.0,
-                        ..Text::default()
-                    };
-                    
-                    frame.fill_text(label);
                 }
             }
         });
@@ -130,4 +118,43 @@ impl Grid {
         }
     }
 
+}
+
+pub fn color(cell: &Cell) -> Color {
+    match cell.cell_type {
+        CellType::FluidCell => {
+            let hue: f32 = cell.pressure % 360.0;
+            let saturation = 1.0;
+            let lightness = 0.5;
+            
+            let (r, g, b) = hsl_to_rgb(hue, saturation, lightness);
+
+            Color::from_rgb(r, g, b)
+
+        },
+        CellType::BoundaryConditionCellType(_) => Color::from_rgb(0.5, 0.5, 0.5),
+        CellType::VoidCell => Color::BLACK,
+    }
+}
+
+fn hsl_to_rgb(hue: f32, saturation: f32, lightness: f32) -> (f32, f32, f32) {
+    let c = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation;
+    let x = c * (1.0 - ((hue / 60.0) % 2.0 - 1.0).abs());
+    let m = lightness - c / 2.0;
+    
+    let (r, g, b) = if hue < 60.0 {
+        (c, x, 0.0)
+    } else if hue < 120.0 {
+        (x, c, 0.0)
+    } else if hue < 180.0 {
+        (0.0, c, x)
+    } else if hue < 240.0 {
+        (0.0, x, c)
+    } else if hue < 300.0 {
+        (x, 0.0, c)
+    } else {
+        (c, 0.0, x)
+    };
+    
+    (r + m, g + m, b + m)
 }

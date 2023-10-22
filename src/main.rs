@@ -23,6 +23,7 @@ pub fn main() -> iced::Result {
     EulerFluidSimulation::run(Settings {
         antialiasing: true,
         window: window::Settings {
+            size: (1600, 900),
             position: window::Position::Centered,
             ..window::Settings::default()
         },
@@ -34,7 +35,6 @@ pub fn main() -> iced::Result {
 struct EulerFluidSimulation {
     grid: Grid,
     is_playing: bool,
-    queued_ticks: usize,
     speed: usize,
 }
 
@@ -71,8 +71,7 @@ impl Application for EulerFluidSimulation {
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::Tick(_) | Message::Next => {
-                self.queued_ticks = (self.queued_ticks + 1).min(self.speed);
-                self.grid.tick(self.queued_ticks);
+                self.grid.tick(1);
             }
             Message::TogglePlayback => {
                 self.is_playing = !self.is_playing;
@@ -113,6 +112,7 @@ impl Application for EulerFluidSimulation {
                 .map(move |_| {
                     Message::None
                 }),
+            text(format!("time: {:.4}s", self.grid.get_time())).size(16),
             controls,
         ];
 
