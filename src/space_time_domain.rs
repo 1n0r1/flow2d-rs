@@ -15,7 +15,9 @@ pub struct SpaceTimeDomain {
     delta_time: f32, // seconds,
     acceleration: [f32; 2], // meters/seconds^2
     reynolds: f32,
+    pressure_range: [f32; 2]
 }
+
 impl Default for SpaceTimeDomain {
     fn default() -> Self {
         let x: usize = 128;
@@ -59,16 +61,13 @@ impl Default for SpaceTimeDomain {
             delta_space: [1.0/(x as f32), 1.0/(y as f32)],
             delta_time: 0.005,
             reynolds: 1000.0,
-            acceleration: [0.0, 0.0]
+            acceleration: [0.0, 0.0],
+            pressure_range: [0.0, 0.0]
         }
     }
 }
 
 impl SpaceTimeDomain {
-    pub fn get_space_size(&self) -> [usize; 2] {
-        self.space_size
-    }
-
     pub fn get_delta_space(&self) -> [f32; 2] {
         self.delta_space
     }
@@ -81,12 +80,29 @@ impl SpaceTimeDomain {
         self.time
     }
     
+    pub fn get_pressure_range(&self) -> [f32; 2] {
+        self.pressure_range
+    }
+
+    pub fn get_centered_velocity(&self, x: usize, y: usize) -> [f32; 2] {
+        match self.space_domain[x][y].cell_type {
+            CellType::FluidCell => {
+                [
+                    (self.space_domain[x][y].velocity[0] + self.space_domain[x - 1][y].velocity[0])/2.0,
+                    (self.space_domain[x][y].velocity[1] + self.space_domain[x][y - 1].velocity[1])/2.0
+                ]
+            }
+            _ => {[0.0, 0.0]}
+        }
+    }
+    
     pub fn iterate_one_timestep(&mut self) {
         self.set_boundary_conditions();
         self.update_fg();
         self.update_rhs();
         self.solve_poisson_pressure_equation();
         self.update_velocity();
+        self.update_pressure_range();
 
         self.time += self.delta_time
     }
@@ -95,6 +111,30 @@ impl SpaceTimeDomain {
 
 
 impl SpaceTimeDomain {
+    fn update_pressure_range(&mut self) {
+        let mut initialized = false;
+
+        for x in 0..self.space_size[0] {
+            for y in 0..self.space_size[1] {
+                match self.space_domain[x][y].cell_type {
+                    CellType::FluidCell => {
+                        if initialized == false || self.space_domain[x][y].pressure < self.pressure_range[0] {
+                            self.pressure_range[0] = self.space_domain[x][y].pressure;
+                        }
+                        
+                        if initialized == false || self.space_domain[x][y].pressure > self.pressure_range[1] {
+                            self.pressure_range[1] = self.space_domain[x][y].pressure;
+                        }
+
+                        initialized = true;
+                    },
+                    _ => {}
+                }
+
+            }
+        }
+    }
+
     fn update_velocity(&mut self) {
         for x in 0..self.space_size[0] {
             for y in 0..self.space_size[1] {
@@ -148,7 +188,9 @@ impl SpaceTimeDomain {
 
                 }
             }
-            if (residual_norm/(self.space_size[0] as f32)/(self.space_size[1] as f32)).sqrt() < POISSON_EPSILON {
+            let res_norm = (residual_norm/(self.space_size[0] as f32)/(self.space_size[1] as f32)).sqrt();
+            
+            if res_norm < POISSON_EPSILON {
                 break;
             }
 
@@ -268,8 +310,8 @@ impl SpaceTimeDomain {
     }
     
 
+    // Set u, v, F, G, p boundary conditions
     fn set_boundary_conditions(&mut self) {
-        // Set u, v, F, G, p boundary conditions
         
         let x_size = self.space_size[0];
         let y_size = self.space_size[1];
@@ -564,7 +606,7 @@ impl SpaceTimeDomain {
                 let uim1 = self.space_domain[x - 1][y].velocity[0];
                 
                 ((ui + uip1).powi(2) - (uim1 + ui).powi(2))/4.0/self.delta_space[0] +
-                GAMMA*((ui + uip1).abs()*(ui-uip1) - (uim1 + ui).abs()*(uim1-ui))/4.0/self.delta_space[0]
+                GAMMA*((ui + uip1).abs()*(ui - uip1) - (uim1 + ui).abs()*(uim1 - ui))/4.0/self.delta_space[0]
 
             },
             _ => panic!("derivative on non fluid cell"),
@@ -579,7 +621,7 @@ impl SpaceTimeDomain {
                 let vjm1 = self.space_domain[x][y - 1].velocity[1];
                 
                 ((vj + vjp1).powi(2) - (vjm1 + vj).powi(2))/4.0/self.delta_space[1] +
-                    GAMMA*((vj + vjp1).abs()*(vj-vjp1) - (vjm1 + vj).abs()*(vjm1-vj))/4.0/self.delta_space[1]
+                    GAMMA*((vj + vjp1).abs()*(vj - vjp1) - (vjm1 + vj).abs()*(vjm1 - vj))/4.0/self.delta_space[1]
 
             },
             _ => panic!("derivative on non fluid cell"),

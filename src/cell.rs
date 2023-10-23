@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Cell {
     pub cell_type: CellType,
     pub velocity: [f32; 2],
@@ -9,7 +9,7 @@ pub struct Cell {
     pub boundary_condition_velocity: [f32; 2]
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Clone, Copy, Default)]
 pub enum CellType {
     #[default]
     FluidCell,
@@ -17,7 +17,7 @@ pub enum CellType {
     BoundaryConditionCell(BoundaryConditionCell)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub enum BoundaryConditionCell {
     NoSlipCell,
     FreeSlipCell,

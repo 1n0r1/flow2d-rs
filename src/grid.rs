@@ -64,6 +64,7 @@ impl Grid {
         frame.with_save(|frame| {
             let delta_x = self.space_time_domain.get_delta_space()[0];
             let delta_y = self.space_time_domain.get_delta_space()[1];
+            let pressure_range = self.space_time_domain.get_pressure_range();
             for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
                 for (y, cell) in row.iter().enumerate() {
                     let pos_x = delta_x*(x as f32);
@@ -73,7 +74,7 @@ impl Grid {
                     frame.fill_rectangle(
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
-                        color(cell),
+                        color(cell, pressure_range),
                     );
                 }
             }
@@ -90,19 +91,13 @@ impl Grid {
                     let reversed_y = row.len() - 1 - y;
                     let pos_y = delta_y*(reversed_y as f32);
                     
-                    let velocity_scale = 0.01;
-                    let (u, v) = (cell.velocity[0], -cell.velocity[1]);
+                    let velocity_scale = 0.1;
+                    let velocity = self.space_time_domain.get_centered_velocity(x, y);
                     
-                    let magnitude = (u*u + v*v).sqrt();
-                    
-                    let (mut normu, mut normv) = (0.0, 0.0);
-                    if magnitude > 0.0 {
-                        (normu, normv) = (u/magnitude, v/magnitude)
-                    }
                     let vector_start = Point::new(pos_x + delta_x/2.0, pos_y + delta_y/2.0);
                     let vector_end = Point::new(
-                        vector_start.x + normu * velocity_scale,
-                        vector_start.y + normv * velocity_scale,
+                        vector_start.x + velocity[0] * velocity_scale,
+                        vector_start.y - velocity[1] * velocity_scale,
                     );
     
                     let vector = Path::line(vector_start, vector_end);
@@ -116,10 +111,10 @@ impl Grid {
     }
 }
 
-pub fn color(cell: &Cell) -> Color {
+pub fn color(cell: &Cell, pressure_range: [f32; 2]) -> Color {
     match cell.cell_type {
         CellType::FluidCell => {
-            let hue: f32 = (0.5 + cell.pressure)*500.0 % 360.0;
+            let hue: f32 = (cell.pressure - pressure_range[0])*360.0/pressure_range[1];
             let saturation = 1.0;
             let lightness = 0.5;
             
