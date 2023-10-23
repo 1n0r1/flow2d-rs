@@ -1,10 +1,11 @@
 use crate::space_time_domain::SpaceTimeDomain;
+use crate::cell;
 use crate::cell::Cell;
 use crate::cell::CellType;
 
-use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Text, Program, Stroke, Style};
+use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Program, Stroke};
 use iced::{
-    Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, Vector, mouse
+    Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, mouse
 };
 
 
@@ -13,20 +14,10 @@ pub struct Grid {
     space_time_domain: SpaceTimeDomain,
     next_cache: Cache,
     vector_cache: Cache,
-    grid_cache: Cache,
-    show_lines: bool,
 }
 
 
 impl Grid {
-    pub fn are_lines_visible(&self) -> bool {
-        self.show_lines
-    }
-
-    pub fn toggle_lines(&mut self, enabled: bool) {
-        self.show_lines = enabled;
-    }
-
     pub fn get_time(&self) -> f32{
         self.space_time_domain.get_time()
     }
@@ -50,7 +41,7 @@ impl Program<()> for Grid {
     type State = ();
 
     fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
-        const GRID_SCALE: f32 = 2000.0;
+        const GRID_SCALE: f32 = 1000.0;
         
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
             frame.scale(GRID_SCALE);
@@ -60,16 +51,7 @@ impl Program<()> for Grid {
             frame.scale(GRID_SCALE);
             self.draw_velocity_vector(frame);
         });
-
-        if !self.show_lines {
-            vec![cells, vectors]
-        } else {
-            let grid = self.grid_cache.draw(renderer, bounds.size(), |frame| {
-                frame.scale(GRID_SCALE);
-                self.draw_grid(frame);
-            });
-            vec![cells, vectors, grid,]
-        }
+        vec![cells, vectors]
     }
 }
 
@@ -103,55 +85,35 @@ impl Grid {
         let delta_y = self.space_time_domain.get_delta_space()[1];
         for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
             for (y, cell) in row.iter().enumerate() {
-                let pos_x = delta_x*(x as f32);
-                let reversed_y = row.len() - 1 - y;
-                let pos_y = delta_y*(reversed_y as f32);
-                
-                let velocity_scale = 0.1;
-                let (u, v) = (cell.velocity[0], -cell.velocity[1]);
-
-                let vector_start = Point::new(pos_x, pos_y);
-                let vector_end = Point::new(
-                    pos_x + u * velocity_scale,
-                    pos_y + v * velocity_scale,
-                );
-
-                let vector = Path::line(vector_start, vector_end);
-                frame.stroke(&vector, Stroke {
-                    width: 1.0,
-                    ..Default::default()
-                });
+                if let cell::CellType::FluidCell = cell.cell_type {
+                    let pos_x = delta_x*(x as f32);
+                    let reversed_y = row.len() - 1 - y;
+                    let pos_y = delta_y*(reversed_y as f32);
+                    
+                    let velocity_scale = 0.01;
+                    let (u, v) = (cell.velocity[0], -cell.velocity[1]);
+                    
+                    let magnitude = (u*u + v*v).sqrt();
+                    
+                    let (mut normu, mut normv) = (0.0, 0.0);
+                    if magnitude > 0.0 {
+                        (normu, normv) = (u/magnitude, v/magnitude)
+                    }
+                    let vector_start = Point::new(pos_x + delta_x/2.0, pos_y + delta_y/2.0);
+                    let vector_end = Point::new(
+                        vector_start.x + normu * velocity_scale,
+                        vector_start.y + normv * velocity_scale,
+                    );
+    
+                    let vector = Path::line(vector_start, vector_end);
+                    frame.stroke(&vector, Stroke {
+                        width: 1.0,
+                        ..Default::default()
+                    });
+                }
             }
         }
     }
-
-    fn draw_grid(&self, frame: &mut Frame) {
-        let total_rows = self.space_time_domain.get_space_size()[1];
-        let total_columns = self.space_time_domain.get_space_size()[0];
-
-        let delta_x = self.space_time_domain.get_delta_space()[0];
-        let delta_y = self.space_time_domain.get_delta_space()[1];
-        
-        let color = Color::from_rgb8(70, 74, 83);
-        for row in 1..total_rows {
-            let pos_row = delta_y*(row as f32);
-            frame.fill_rectangle(
-                Point::new(0.0, pos_row as f32),
-                Size::new(total_columns as f32, 0.02),
-                color,
-            );
-        }
-
-        for column in 1..total_columns {
-            let pos_column = delta_x*(column as f32);
-            frame.fill_rectangle(
-                Point::new(pos_column as f32, 0.0),
-                Size::new(0.02, total_rows as f32),
-                color,
-            );
-        }
-    }
-
 }
 
 pub fn color(cell: &Cell) -> Color {
@@ -166,7 +128,7 @@ pub fn color(cell: &Cell) -> Color {
             Color::from_rgb(r, g, b)
 
         },
-        CellType::BoundaryConditionCellType(_) => Color::from_rgb(0.5, 0.5, 0.5),
+        CellType::BoundaryConditionCell(_) => Color::from_rgb(0.5, 0.5, 0.5),
         CellType::VoidCell => Color::BLACK,
     }
 }

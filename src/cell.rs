@@ -1,7 +1,4 @@
-use iced::Color;
-
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Cell {
     pub cell_type: CellType,
     pub velocity: [f32; 2],
@@ -12,15 +9,16 @@ pub struct Cell {
     pub boundary_condition_velocity: [f32; 2]
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum CellType {
-    VoidCell,
+    #[default]
     FluidCell,
-    BoundaryConditionCellType(BoundaryConditionCellType)
+    VoidCell,
+    BoundaryConditionCell(BoundaryConditionCell)
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum BoundaryConditionCellType {
+pub enum BoundaryConditionCell {
     NoSlipCell,
     FreeSlipCell,
     OutFlowCell,

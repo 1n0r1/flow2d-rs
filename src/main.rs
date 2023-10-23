@@ -11,7 +11,7 @@ use iced::executor;
 use iced::theme::{self, Theme};
 use iced::time;
 use iced::widget::{
-    button, checkbox, column, container, row, slider, text,
+    button, column, container, row, slider, text,
 };
 use iced::window;
 use iced::{
@@ -42,7 +42,6 @@ struct EulerFluidSimulation {
 enum Message {
     Tick(Instant),
     TogglePlayback,
-    ToggleGrid(bool),
     Next,
     SpeedChanged(f32),
     None
@@ -57,7 +56,7 @@ impl Application for EulerFluidSimulation {
     fn new(_flags: ()) -> (Self, Command<Message>) {
         (
             Self {
-                speed: 10,
+                speed: 2,
                 ..Self::default()
             },
             Command::none(),
@@ -75,9 +74,6 @@ impl Application for EulerFluidSimulation {
             }
             Message::TogglePlayback => {
                 self.is_playing = !self.is_playing;
-            }
-            Message::ToggleGrid(show_grid_lines) => {
-                self.grid.toggle_lines(show_grid_lines);
             }
             Message::SpeedChanged(speed) => {
                 if !self.is_playing {
@@ -102,7 +98,6 @@ impl Application for EulerFluidSimulation {
         let selected_speed = self.speed;
         let controls = view_controls(
             self.is_playing,
-            self.grid.are_lines_visible(),
             selected_speed,
         );
 
@@ -129,7 +124,6 @@ impl Application for EulerFluidSimulation {
 
 fn view_controls<'a>(
     is_playing: bool,
-    is_grid_enabled: bool,
     speed: usize,
 ) -> Element<'a, Message> {
     let playback_controls = row![
@@ -151,11 +145,7 @@ fn view_controls<'a>(
 
     row![
         playback_controls,
-        speed_controls,
-        checkbox("Grid", is_grid_enabled, Message::ToggleGrid)
-            .size(16)
-            .spacing(5)
-            .text_size(16)
+        speed_controls
     ]
     .padding(10)
     .spacing(20)
