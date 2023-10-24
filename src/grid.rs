@@ -1,4 +1,4 @@
-use crate::space_time_domain::SpaceTimeDomain;
+use crate::space_time_domain::Simulation;
 use crate::cell;
 use crate::cell::Cell;
 use crate::cell::CellType;
@@ -10,7 +10,7 @@ use iced::{
 
 #[derive(Default)]
 pub struct Grid {
-    space_time_domain: SpaceTimeDomain,
+    space_time_domain: Simulation,
     next_cache: Cache,
     vector_cache: Cache,
     contour_cache: Cache,

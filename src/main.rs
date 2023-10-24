@@ -2,6 +2,7 @@ mod grid;
 mod space_time_domain;
 mod cell;
 mod presets;
+mod space_domain;
 
 use grid::Grid;
 

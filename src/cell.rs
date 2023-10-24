@@ -1,4 +1,4 @@
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct Cell {
     pub cell_type: CellType,
     pub velocity: [f32; 2],
@@ -10,7 +10,7 @@ pub struct Cell {
     pub psi: f32
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Default, Clone, Copy)]
 pub enum CellType {
     #[default]
     FluidCell,

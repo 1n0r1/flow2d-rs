@@ -1,24 +1,31 @@
 use crate::cell::Cell;
 use crate::cell::CellType;
 use crate::cell::BoundaryConditionCell;
+use crate::space_domain::SpaceDomain;
 
-
-pub struct SpaceTimeDomainPreset {
-    pub space_domain: Vec<Vec<Cell>>,
-    pub space_size: [usize; 2],
-    pub delta_space: [f32; 2], // meters
+pub struct SimulationPreset {
+    pub space_domain: SpaceDomain,
     pub delta_time: f32, // seconds,
     pub acceleration: [f32; 2], // meters/seconds^2
     pub reynolds: f32,
 }
 
-pub fn lid_driven_cavity() -> SpaceTimeDomainPreset {
+pub fn lid_driven_cavity() -> SimulationPreset {
     let x_length = 1.0;
     let y_length = 1.0;
     let x: usize = 128;
     let y: usize = 128;
     
-    let mut space_domain = vec![vec![Cell::default(); y]; x];
+    let mut space_domain: Vec<Vec<Cell>> = Vec::with_capacity(x);
+    for xi in 0..x {
+        let mut row = Vec::with_capacity(y);
+        for yi in 0..y {
+            row.push(Cell::default());
+        }
+        space_domain.push(row);
+    }
+
+    
     for xi in 0..x {
         for yi in 0..y {
             if xi == 0 || xi == x - 1 || yi == 0 {
@@ -45,10 +52,12 @@ pub fn lid_driven_cavity() -> SpaceTimeDomainPreset {
 
         }
     }
-    SpaceTimeDomainPreset {
-        space_domain,
-        space_size: [x, y],
-        delta_space: [x_length/(x as f32), y_length/(y as f32)],
+    
+    let delta_space = [x_length/(x as f32), y_length/(y as f32)];
+    let gamma = 0.9;
+
+    SimulationPreset {
+        space_domain: SpaceDomain::new(space_domain, delta_space, gamma),
         delta_time: 0.005,
         reynolds: 1000.0,
         acceleration: [0.0, 0.0]
@@ -56,13 +65,21 @@ pub fn lid_driven_cavity() -> SpaceTimeDomainPreset {
 }
 
 
-pub fn backward_facing_step() -> SpaceTimeDomainPreset {
+pub fn backward_facing_step() -> SimulationPreset {
     let x_length = 15.0;
     let y_length = 1.5;
     let x: usize = 150;
     let y: usize = 75;
 
-    let mut space_domain = vec![vec![Cell::default(); y]; x];
+    let mut space_domain: Vec<Vec<Cell>> = Vec::with_capacity(x);
+    for xi in 0..x {
+        let mut row = Vec::with_capacity(y);
+        for yi in 0..y {
+            row.push(Cell::default());
+        }
+        space_domain.push(row);
+    }
+
     for xi in 0..x {
         for yi in 0..y {
             if xi == 0 {
@@ -118,11 +135,11 @@ pub fn backward_facing_step() -> SpaceTimeDomainPreset {
             }
         }
     }
-
-    SpaceTimeDomainPreset {
-        space_domain,
-        space_size: [x, y],
-        delta_space: [x_length/(x as f32), y_length/(y as f32)],
+    
+    let delta_space = [x_length/(x as f32), y_length/(y as f32)];
+    let gamma = 0.9;
+    SimulationPreset {
+        space_domain: SpaceDomain::new(space_domain, delta_space, gamma),
         delta_time: 0.005,
         reynolds: 1000.0,
         acceleration: [0.0, 0.0]
@@ -130,13 +147,22 @@ pub fn backward_facing_step() -> SpaceTimeDomainPreset {
 }
 
 
-pub fn cylinder_cross_flow() -> SpaceTimeDomainPreset {
+pub fn cylinder_cross_flow() -> SimulationPreset {
     let x_length = 11.0;
     let y_length = 4.1;
     let x: usize = 110;
     let y: usize = 41;
 
-    let mut space_domain = vec![vec![Cell::default(); y]; x];
+    let mut space_domain: Vec<Vec<Cell>> = Vec::with_capacity(x);
+    for xi in 0..x {
+        let mut row = Vec::with_capacity(y);
+        for yi in 0..y {
+            row.push(Cell::default());
+        }
+        space_domain.push(row);
+    }
+
+
     for xi in 0..x {
         for yi in 0..y {
             if xi == 0 {
@@ -173,8 +199,6 @@ pub fn cylinder_cross_flow() -> SpaceTimeDomainPreset {
         }
     }
 
-    let delta_space = [x_length/(x as f32), y_length/(y as f32)];
-
     let radius = 5.0;
     let center = [20, 20];
     
@@ -193,11 +217,11 @@ pub fn cylinder_cross_flow() -> SpaceTimeDomainPreset {
         }
     }
     
+    let delta_space = [x_length/(x as f32), y_length/(y as f32)];
+    let gamma = 0.9;
     
-    SpaceTimeDomainPreset {
-        space_domain,
-        space_size: [x, y],
-        delta_space: delta_space,
+    SimulationPreset {
+        space_domain: SpaceDomain::new(space_domain, delta_space, gamma),
         delta_time: 0.001,
         reynolds: 100.0,
         acceleration: [0.0, 0.0]
