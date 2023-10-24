@@ -17,9 +17,9 @@ pub fn lid_driven_cavity() -> SimulationPreset {
     let y: usize = 128;
     
     let mut space_domain: Vec<Vec<Cell>> = Vec::with_capacity(x);
-    for xi in 0..x {
+    for _ in 0..x {
         let mut row = Vec::with_capacity(y);
-        for yi in 0..y {
+        for _ in 0..y {
             row.push(Cell::default());
         }
         space_domain.push(row);
@@ -72,9 +72,9 @@ pub fn backward_facing_step() -> SimulationPreset {
     let y: usize = 75;
 
     let mut space_domain: Vec<Vec<Cell>> = Vec::with_capacity(x);
-    for xi in 0..x {
+    for _ in 0..x {
         let mut row = Vec::with_capacity(y);
-        for yi in 0..y {
+        for _ in 0..y {
             row.push(Cell::default());
         }
         space_domain.push(row);
@@ -154,9 +154,9 @@ pub fn cylinder_cross_flow() -> SimulationPreset {
     let y: usize = 41;
 
     let mut space_domain: Vec<Vec<Cell>> = Vec::with_capacity(x);
-    for xi in 0..x {
+    for _ in 0..x {
         let mut row = Vec::with_capacity(y);
-        for yi in 0..y {
+        for _ in 0..y {
             row.push(Cell::default());
         }
         space_domain.push(row);

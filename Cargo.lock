@@ -527,7 +527,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "flow_rs"
+name = "flow2d_rs"
 version = "0.1.0"
 dependencies = [
  "iced",
