@@ -41,7 +41,7 @@ impl Program<()> for Grid {
     type State = ();
 
     fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
-        const GRID_SCALE: f32 = 1000.0;
+        const GRID_SCALE: f32 = 100.0;
         
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
             frame.scale(GRID_SCALE);
@@ -65,6 +65,8 @@ impl Grid {
             let delta_x = self.space_time_domain.get_delta_space()[0];
             let delta_y = self.space_time_domain.get_delta_space()[1];
             let pressure_range = self.space_time_domain.get_pressure_range();
+            let speed_range = self.space_time_domain.get_speed_range();
+
             for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
                 for (y, cell) in row.iter().enumerate() {
                     let pos_x = delta_x*(x as f32);
@@ -74,7 +76,8 @@ impl Grid {
                     frame.fill_rectangle(
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
-                        color(cell, pressure_range),
+                        // color_presure(cell, pressure_range),
+                        color_speed(cell, speed_range),
                     );
                 }
             }
@@ -86,6 +89,9 @@ impl Grid {
         let delta_y = self.space_time_domain.get_delta_space()[1];
         for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
             for (y, cell) in row.iter().enumerate() {
+                // if x % 2 != 0 || y % 2 != 0 {
+                //     continue;
+                // }
                 if let cell::CellType::FluidCell = cell.cell_type {
                     let pos_x = delta_x*(x as f32);
                     let reversed_y = row.len() - 1 - y;
@@ -111,10 +117,31 @@ impl Grid {
     }
 }
 
-pub fn color(cell: &Cell, pressure_range: [f32; 2]) -> Color {
+pub fn color_presure(cell: &Cell, pressure_range: [f32; 2]) -> Color {
     match cell.cell_type {
         CellType::FluidCell => {
-            let hue: f32 = (cell.pressure - pressure_range[0])*360.0/pressure_range[1];
+            // 240 offset to map from blue to red instead of the whole range of hue
+            let hue: f32 = 240.0 - (cell.pressure - pressure_range[0])*240.0/pressure_range[1];
+            let saturation = 1.0;
+            let lightness = 0.5;
+            
+            let (r, g, b) = hsl_to_rgb(hue, saturation, lightness);
+
+            Color::from_rgb(r, g, b)
+
+        },
+        CellType::BoundaryConditionCell(_) => Color::from_rgb(0.5, 0.5, 0.5),
+        CellType::VoidCell => Color::BLACK,
+    }
+}
+
+pub fn color_speed(cell: &Cell, speed_range: [f32; 2]) -> Color {
+    match cell.cell_type {
+        CellType::FluidCell => {
+            let speed = (cell.velocity[0].powi(2) + cell.velocity[1].powi(2)).sqrt();
+
+            // 240 offset to map from blue to red instead of the whole range of hue
+            let hue: f32 = 240.0 - (speed - speed_range[0])*240.0/speed_range[1];
             let saturation = 1.0;
             let lightness = 0.5;
             

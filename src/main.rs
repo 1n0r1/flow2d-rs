@@ -1,6 +1,7 @@
 mod grid;
 mod space_time_domain;
 mod cell;
+mod presets;
 
 use grid::Grid;
 
@@ -136,7 +137,7 @@ fn view_controls<'a>(
     .spacing(10);
 
     let speed_controls = row![
-        slider(1.0..=1000.0, speed as f32, Message::SpeedChanged),
+        slider(1.0..=150.0, speed as f32, Message::SpeedChanged),
         text(format!("x{speed}")).size(16),
     ]
     .width(Length::Fill)
