@@ -19,7 +19,6 @@ use iced::{
     Alignment, Application, Command, Element, Length, Settings, Subscription,
 };
 
-
 pub fn main() -> iced::Result {
     EulerFluidSimulation::run(Settings {
         antialiasing: true,

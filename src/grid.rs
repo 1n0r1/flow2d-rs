@@ -8,12 +8,12 @@ use iced::{
     Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, mouse
 };
 
-
 #[derive(Default)]
 pub struct Grid {
     space_time_domain: SpaceTimeDomain,
     next_cache: Cache,
     vector_cache: Cache,
+    contour_cache: Cache,
 }
 
 
@@ -33,6 +33,7 @@ impl Grid {
         self.space_time_domain.iterate_one_timestep();
         self.next_cache.clear();
         self.vector_cache.clear();
+        self.contour_cache.clear();
     }
 }
 
@@ -47,16 +48,19 @@ impl Program<()> for Grid {
             frame.scale(GRID_SCALE);
             self.draw_cells(frame);
         });
+
         let vectors = self.vector_cache.draw(renderer, bounds.size(), |frame| {
             frame.scale(GRID_SCALE);
             self.draw_velocity_vector(frame);
         });
+        
         vec![cells, vectors]
     }
 }
 
 
 impl Grid {
+
     fn draw_cells(&self, frame: &mut Frame) {
         let background = Path::rectangle(Point::ORIGIN, frame.size());
         frame.fill(&background, Color::from_rgb8(0x40, 0x44, 0x4B));
@@ -66,6 +70,7 @@ impl Grid {
             let delta_y = self.space_time_domain.get_delta_space()[1];
             let pressure_range = self.space_time_domain.get_pressure_range();
             let speed_range = self.space_time_domain.get_speed_range();
+            let psi_range = self.space_time_domain.get_psi_range();
 
             for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
                 for (y, cell) in row.iter().enumerate() {
@@ -77,7 +82,8 @@ impl Grid {
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
                         // color_presure(cell, pressure_range),
-                        color_speed(cell, speed_range),
+                        // color_speed(cell, speed_range),
+                        color_psi(cell, psi_range),
                     );
                 }
             }
@@ -117,11 +123,12 @@ impl Grid {
     }
 }
 
+
 pub fn color_presure(cell: &Cell, pressure_range: [f32; 2]) -> Color {
     match cell.cell_type {
         CellType::FluidCell => {
             // 240 offset to map from blue to red instead of the whole range of hue
-            let hue: f32 = 240.0 - (cell.pressure - pressure_range[0])*240.0/pressure_range[1];
+            let hue: f32 = 240.0 - (cell.pressure - pressure_range[0])*240.0/(pressure_range[1] - pressure_range[0]);
             let saturation = 1.0;
             let lightness = 0.5;
             
@@ -135,13 +142,33 @@ pub fn color_presure(cell: &Cell, pressure_range: [f32; 2]) -> Color {
     }
 }
 
+
 pub fn color_speed(cell: &Cell, speed_range: [f32; 2]) -> Color {
     match cell.cell_type {
         CellType::FluidCell => {
             let speed = (cell.velocity[0].powi(2) + cell.velocity[1].powi(2)).sqrt();
 
             // 240 offset to map from blue to red instead of the whole range of hue
-            let hue: f32 = 240.0 - (speed - speed_range[0])*240.0/speed_range[1];
+            let hue: f32 = 240.0 - (speed - speed_range[0])*240.0/(speed_range[1] - speed_range[0]);
+            let saturation = 1.0;
+            let lightness = 0.5;
+            
+            let (r, g, b) = hsl_to_rgb(hue, saturation, lightness);
+
+            Color::from_rgb(r, g, b)
+
+        },
+        CellType::BoundaryConditionCell(_) => Color::from_rgb(0.5, 0.5, 0.5),
+        CellType::VoidCell => Color::BLACK,
+    }
+}
+
+
+pub fn color_psi(cell: &Cell, psi_range: [f32; 2]) -> Color {
+    match cell.cell_type {
+        CellType::FluidCell => {
+            // 240 offset to map from blue to red instead of the whole range of hue
+            let hue: f32 = (cell.psi - psi_range[0])*7200.0/(psi_range[1] - psi_range[0])%360.0;
             let saturation = 1.0;
             let lightness = 0.5;
             

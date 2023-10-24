@@ -19,12 +19,13 @@ pub struct SpaceTimeDomain {
 
     // For coloring
     pressure_range: [f32; 2], 
-    speed_range: [f32; 2]
+    speed_range: [f32; 2],
+    psi_range: [f32; 2]
 }
 
 impl Default for SpaceTimeDomain {
     fn default() -> Self {
-        let preset = presets::cylinder_cross_flow();
+        let preset = presets::backward_facing_step();
 
 
         Self {
@@ -36,7 +37,8 @@ impl Default for SpaceTimeDomain {
             acceleration: preset.acceleration,
             time: 0.0,
             pressure_range: [0.0, 0.0],
-            speed_range: [0.0, 0.0]
+            speed_range: [0.0, 0.0],
+            psi_range: [0.0, 0.0]
         }
     }
 }
@@ -44,6 +46,10 @@ impl Default for SpaceTimeDomain {
 impl SpaceTimeDomain {
     pub fn get_delta_space(&self) -> [f32; 2] {
         self.delta_space
+    }
+
+    pub fn get_space_size(&self) -> [usize; 2] {
+        self.space_size
     }
 
     pub fn get_space(&self) -> Vec<Vec<Cell>> {
@@ -60,6 +66,10 @@ impl SpaceTimeDomain {
 
     pub fn get_speed_range(&self) -> [f32; 2] {
         self.speed_range
+    }
+    
+    pub fn get_psi_range(&self) -> [f32; 2] {
+        self.psi_range
     }
 
     pub fn get_centered_velocity(&self, x: usize, y: usize) -> [f32; 2] {
@@ -91,6 +101,9 @@ impl SpaceTimeDomain {
         // Change fluid cells velocity
         self.update_velocity(); // O(n^2)
 
+        // Change fluid cells and boundary cell on the left and bottom
+        self.update_psi(); // O(n^2)
+
         // For coloring
         self.update_pressure_and_speed_range(); // O(n^2)
 
@@ -101,6 +114,29 @@ impl SpaceTimeDomain {
 
 
 impl SpaceTimeDomain {
+    fn update_psi(&mut self) {
+        self.psi_range = [0.0, 0.0];
+        for x in 0..self.space_size[0] {
+            self.space_domain[x][0].psi = 0.0;
+            for y in 1..self.space_size[1] {
+                match self.space_domain[x][y].cell_type {
+                    CellType::FluidCell => {
+                        self.space_domain[x][y].psi = self.space_domain[x][y - 1].psi + self.space_domain[x][y].velocity[0]*self.delta_space[1];
+                        if self.space_domain[x][y].psi < self.psi_range[0] {
+                            self.psi_range[0] = self.space_domain[x][y].psi;
+                        }
+                        if self.space_domain[x][y].psi > self.psi_range[1] {
+                            self.psi_range[1] = self.space_domain[x][y].psi;
+                        }
+                    }
+                    _ => {
+                        self.space_domain[x][y].psi = self.space_domain[x][y - 1].psi;
+                    },
+                }
+            }
+        }
+    }
+
     fn update_pressure_and_speed_range(&mut self) {
         let mut initialized = false;
 
@@ -603,7 +639,7 @@ impl SpaceTimeDomain {
 
 }
 
-// Derivative stuffs
+// Spatial derivatives
 impl SpaceTimeDomain {
     fn d2udx2(&self, x: usize, y: usize) -> f32 {
         match self.space_domain[x][y].cell_type {

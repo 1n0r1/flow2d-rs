@@ -6,7 +6,8 @@ pub struct Cell {
     pub rhs: f32,
     pub f: f32,
     pub g: f32,
-    pub boundary_condition_velocity: [f32; 2]
+    pub boundary_condition_velocity: [f32; 2],
+    pub psi: f32
 }
 
 #[derive(Clone, Copy, Default)]
