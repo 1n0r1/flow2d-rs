@@ -45,6 +45,7 @@ enum Message {
     TogglePlayback,
     Next,
     SpeedChanged(f32),
+    Export,
     None
 }
 
@@ -80,6 +81,9 @@ impl Application for EulerFluidSimulation {
                 if !self.is_playing {
                     self.speed = speed.round() as usize;
                 }
+            }
+            Message::Export => {
+                self.grid.export_image();
             }
             Message::None => {}
         }
@@ -132,6 +136,9 @@ fn view_controls<'a>(
             .on_press(Message::TogglePlayback),
         button("Next")
             .on_press(Message::Next)
+            .style(theme::Button::Secondary),
+        button("Export Image")
+            .on_press(Message::Export)
             .style(theme::Button::Secondary),
     ]
     .spacing(10);

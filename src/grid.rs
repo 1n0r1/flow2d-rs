@@ -5,8 +5,10 @@ use crate::cell::CellType;
 
 use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Program, Stroke};
 use iced::{
-    Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, mouse
+    Color, Element, Length, Point, Renderer, Size, Theme, mouse
 };
+
+use plotters::prelude::*;
 
 #[derive(Default)]
 pub struct Grid {
@@ -35,14 +37,50 @@ impl Grid {
         self.vector_cache.clear();
         self.contour_cache.clear();
     }
+
+    pub fn export_image(&self) {
+        let scale = 20.0;
+        let space_size = self.space_time_domain.get_space_size();
+        let delta_space = self.space_time_domain.get_delta_space();
+
+        let pressure_range = self.space_time_domain.get_pressure_range();
+        let speed_range = self.space_time_domain.get_speed_range();
+        let psi_range = self.space_time_domain.get_psi_range();
+
+        let pixel_scale = [scale*delta_space[0], scale*delta_space[1]];
+        let drawing_area = BitMapBackend::new("img/test.png",
+            (((space_size[0] as f32)*pixel_scale[0]) as u32, ((space_size[1] as f32)*pixel_scale[1]) as u32))
+            .into_drawing_area();
+        drawing_area.fill(&WHITE).unwrap();
+
+        for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
+            for (y, cell) in row.iter().enumerate() {
+                let pos_x = x as i32;
+                let reversed_y = row.len() - 1 - y;
+                let pos_y = reversed_y as i32;
+                let color = color_speed(cell, speed_range);
+                drawing_area.draw(&Rectangle::new([
+                        (((pos_x as f32)*pixel_scale[0]) as i32, ((pos_y as f32)*pixel_scale[1]) as i32), 
+                        (((pos_x as f32 + 1.0)*pixel_scale[0]) as i32, ((pos_y as f32 + 1.0)*pixel_scale[1]) as i32)
+                    ],
+                    Into::<ShapeStyle>::into(plotters::style::RGBColor(
+                        (color.r*255.0) as u8,
+                        (color.g*255.0) as u8,
+                        (color.b*255.0) as u8,
+                    )).filled()
+                )).unwrap();
+            }
+        }
+        drawing_area.present().unwrap();
+    }
 }
 
 
 impl Program<()> for Grid {
     type State = ();
 
-    fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
-        const GRID_SCALE: f32 = 700.0;
+    fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: iced::Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
+        const GRID_SCALE: f32 = 100.0;
         
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
             frame.scale(GRID_SCALE);
@@ -54,7 +92,7 @@ impl Program<()> for Grid {
             self.draw_velocity_vector(frame);
         });
         
-        vec![cells, vectors]
+        vec![cells]
     }
 }
 
@@ -82,8 +120,8 @@ impl Grid {
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
                         // color_presure(cell, pressure_range),
-                        // color_speed(cell, speed_range),
-                        color_psi(cell, psi_range),
+                        color_speed(cell, speed_range),
+                        // color_psi(cell, psi_range),
                     );
                 }
             }

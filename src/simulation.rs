@@ -7,7 +7,7 @@ use crate::presets;
 use crate::space_domain::SpaceDomain;
 
 const OMEGA: f32 = 1.7; // 0 <= OMEGA <= 2
-const ITR_MAX: usize = 50;
+const ITR_MAX: usize = 100;
 const POISSON_EPSILON: f32 = 0.001;
 
 pub struct Simulation {
@@ -22,7 +22,7 @@ pub struct Simulation {
 
 impl Default for Simulation {
     fn default() -> Self {
-        let preset = presets::lid_driven_cavity();
+        let preset = presets::cylinder_cross_flow();
 
 
         Self {
