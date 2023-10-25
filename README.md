@@ -31,7 +31,7 @@ Lid-driven cavity
   - Standalone crate just for the simulation (without GUI)
   - Contour plot for stream function
   - Free boundary value simulation
-  - Use other method to solve Poisson equation
+  - Use other method to solve Poisson equation (possibly Multigrid)
   - Optimize to run on GPU
   - Energy/Heat flow simulation
   - Extension to 3D
