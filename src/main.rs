@@ -1,5 +1,5 @@
 mod grid;
-mod space_time_domain;
+mod simulation;
 mod cell;
 mod presets;
 mod space_domain;

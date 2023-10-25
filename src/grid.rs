@@ -1,4 +1,4 @@
-use crate::space_time_domain::Simulation;
+use crate::simulation::Simulation;
 use crate::cell;
 use crate::cell::Cell;
 use crate::cell::CellType;
@@ -42,7 +42,7 @@ impl Program<()> for Grid {
     type State = ();
 
     fn draw(&self, _state: &(), renderer: &Renderer, _theme: &Theme, bounds: Rectangle, _cursor: mouse::Cursor) -> Vec<Geometry>{
-        const GRID_SCALE: f32 = 100.0;
+        const GRID_SCALE: f32 = 700.0;
         
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
             frame.scale(GRID_SCALE);
@@ -168,7 +168,7 @@ pub fn color_psi(cell: &Cell, psi_range: [f32; 2]) -> Color {
     match cell.cell_type {
         CellType::FluidCell => {
             // 240 offset to map from blue to red instead of the whole range of hue
-            let hue: f32 = (cell.psi - psi_range[0])*7200.0/(psi_range[1] - psi_range[0])%360.0;
+            let hue: f32 = (cell.psi - psi_range[0])*1800.0/(psi_range[1] - psi_range[0])%360.0;
             let saturation = 1.0;
             let lightness = 0.5;
             

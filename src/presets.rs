@@ -222,7 +222,7 @@ pub fn cylinder_cross_flow() -> SimulationPreset {
     
     SimulationPreset {
         space_domain: SpaceDomain::new(space_domain, delta_space, gamma),
-        delta_time: 0.001,
+        delta_time: 0.005,
         reynolds: 100.0,
         acceleration: [0.0, 0.0]
     }

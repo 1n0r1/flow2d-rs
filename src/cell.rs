@@ -10,7 +10,7 @@ pub struct Cell {
     pub psi: f32
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum CellType {
     #[default]
     FluidCell,
@@ -18,7 +18,7 @@ pub enum CellType {
     BoundaryConditionCell(BoundaryConditionCell)
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BoundaryConditionCell {
     NoSlipCell,
     FreeSlipCell,

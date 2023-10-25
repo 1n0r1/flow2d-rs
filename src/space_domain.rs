@@ -108,38 +108,19 @@ impl SpaceDomain {
     }
 
     pub fn update_pressure_and_speed_range(&mut self) {
-        let mut initialized = false;
+        let (min_pressure, max_pressure, min_speed, max_speed) = self.space_domain.iter().flatten()
+            .filter(|cell| cell.cell_type == CellType::FluidCell)
+            .map(|cell| {
+                let pressure = cell.pressure;
+                let speed = (cell.velocity[0].powi(2) + cell.velocity[1].powi(2)).sqrt();
+                (pressure, speed)
+            })
+            .fold((f32::INFINITY, f32::NEG_INFINITY, f32::INFINITY, f32::NEG_INFINITY), |(min_p, max_p, min_s, max_s), (pressure, speed)| {
+                (min_p.min(pressure), max_p.max(pressure), min_s.min(speed), max_s.max(speed))
+            });
 
-        for x in 0..self.space_size[0] {
-            for y in 0..self.space_size[1] {
-                match self.space_domain[x][y].cell_type {
-                    CellType::FluidCell => {
-                        let pressure = self.space_domain[x][y].pressure;
-                        let speed = (self.space_domain[x][y].velocity[0].powi(2) + self.space_domain[x][y].velocity[1].powi(2)).sqrt();
-
-                        if initialized == false || pressure < self.pressure_range[0] {
-                            self.pressure_range[0] = pressure;
-                        }
-                        
-                        if initialized == false || pressure > self.pressure_range[1] {
-                            self.pressure_range[1] = pressure;
-                        }
-
-                        if initialized == false || speed < self.speed_range[0] {
-                            self.speed_range[0] = speed;
-                        }
-                        
-                        if initialized == false || speed > self.speed_range[1] {
-                            self.speed_range[1] = speed;
-                        }
-
-                        initialized = true;
-                    },
-                    _ => {}
-                }
-
-            }
-        }
+        self.pressure_range = [min_pressure, max_pressure];
+        self.speed_range = [min_speed, max_speed];
     }
 
     // Set u, v, F, G, p boundary conditions
