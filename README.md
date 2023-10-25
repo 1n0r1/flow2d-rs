@@ -20,7 +20,7 @@ Lid-driven cavity
 
 ## Features
 - 2D viscous incompressible Newtonian fluid flow
-- Solve Navier-Stokes equations flow using Euler's Method
+- Solve Navier-Stokes equations using Euler's Method
 - Solve Poisson equation with Successive Over-relaxation method
 - Calculate and visualize pressure, speed and stream function
 - Different types of boundary conditions:
