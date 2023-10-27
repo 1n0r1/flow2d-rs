@@ -6,22 +6,23 @@ pub struct Cell {
     pub rhs: f32,
     pub f: f32,
     pub g: f32,
-    pub boundary_condition_velocity: [f32; 2],
-    pub psi: f32
+    pub psi: f32,
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy)]
 pub enum CellType {
     #[default]
     FluidCell,
     VoidCell,
-    BoundaryConditionCell(BoundaryConditionCell)
+    BoundaryConditionCell(BoundaryConditionCell),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 pub enum BoundaryConditionCell {
-    NoSlipCell,
+    NoSlipCell {
+        boundary_condition_velocity: [f32; 2],
+    },
     FreeSlipCell,
     OutFlowCell,
-    InflowCell
+    InflowCell,
 }

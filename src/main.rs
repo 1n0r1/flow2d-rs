@@ -1,24 +1,19 @@
-mod grid;
-mod simulation;
 mod cell;
+mod grid;
 mod presets;
+mod simulation;
 mod space_domain;
 
 use grid::Grid;
-
 
 use std::time::{Duration, Instant};
 
 use iced::executor;
 use iced::theme::{self, Theme};
 use iced::time;
-use iced::widget::{
-    button, column, container, row, slider, text,
-};
+use iced::widget::{button, column, container, row, slider, text};
 use iced::window;
-use iced::{
-    Alignment, Application, Command, Element, Length, Settings, Subscription,
-};
+use iced::{Alignment, Application, Command, Element, Length, Settings, Subscription};
 
 pub fn main() -> iced::Result {
     EulerFluidSimulation::run(Settings {
@@ -46,7 +41,7 @@ enum Message {
     Next,
     SpeedChanged(f32),
     Export,
-    None
+    None,
 }
 
 impl Application for EulerFluidSimulation {
@@ -92,8 +87,7 @@ impl Application for EulerFluidSimulation {
 
     fn subscription(&self) -> Subscription<Message> {
         if self.is_playing {
-            time::every(Duration::from_millis(1000 / self.speed as u64))
-                .map(Message::Tick)
+            time::every(Duration::from_millis(1000 / self.speed as u64)).map(Message::Tick)
         } else {
             Subscription::none()
         }
@@ -101,17 +95,10 @@ impl Application for EulerFluidSimulation {
 
     fn view(&self) -> Element<Message> {
         let selected_speed = self.speed;
-        let controls = view_controls(
-            self.is_playing,
-            selected_speed,
-        );
+        let controls = view_controls(self.is_playing, selected_speed);
 
         let content = column![
-            self.grid
-                .view()
-                .map(move |_| {
-                    Message::None
-                }),
+            self.grid.view().map(move |_| { Message::None }),
             text(format!("time: {:.4}s", self.grid.get_time())).size(16),
             controls,
         ];
@@ -127,13 +114,9 @@ impl Application for EulerFluidSimulation {
     }
 }
 
-fn view_controls<'a>(
-    is_playing: bool,
-    speed: usize,
-) -> Element<'a, Message> {
+fn view_controls<'a>(is_playing: bool, speed: usize) -> Element<'a, Message> {
     let playback_controls = row![
-        button(if is_playing { "Pause" } else { "Play" })
-            .on_press(Message::TogglePlayback),
+        button(if is_playing { "Pause" } else { "Play" }).on_press(Message::TogglePlayback),
         button("Next")
             .on_press(Message::Next)
             .style(theme::Button::Secondary),
@@ -151,12 +134,9 @@ fn view_controls<'a>(
     .align_items(Alignment::Center)
     .spacing(10);
 
-    row![
-        playback_controls,
-        speed_controls
-    ]
-    .padding(10)
-    .spacing(20)
-    .align_items(Alignment::Center)
-    .into()
+    row![playback_controls, speed_controls]
+        .padding(10)
+        .spacing(20)
+        .align_items(Alignment::Center)
+        .into()
 }

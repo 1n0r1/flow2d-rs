@@ -1,11 +1,11 @@
+use crate::cell::BoundaryConditionCell;
 use crate::cell::Cell;
 use crate::cell::CellType;
-use crate::cell::BoundaryConditionCell;
 use crate::space_domain::SpaceDomain;
 
 pub struct SimulationPreset {
     pub space_domain: SpaceDomain,
-    pub delta_time: f32, // seconds,
+    pub delta_time: f32,        // seconds,
     pub acceleration: [f32; 2], // meters/seconds^2
     pub reynolds: f32,
 }
@@ -15,7 +15,7 @@ pub fn lid_driven_cavity() -> SimulationPreset {
     let y_length = 1.0;
     let x: usize = 128;
     let y: usize = 128;
-    
+
     let mut space_domain: Vec<Vec<Cell>> = Vec::with_capacity(x);
     for _ in 0..x {
         let mut row = Vec::with_capacity(y);
@@ -25,19 +25,21 @@ pub fn lid_driven_cavity() -> SimulationPreset {
         space_domain.push(row);
     }
 
-    
     for xi in 0..x {
         for yi in 0..y {
             if xi == 0 || xi == x - 1 || yi == 0 {
                 space_domain[xi][yi] = Cell {
-                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell),
+                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell {
+                        boundary_condition_velocity: [0.0, 0.0],
+                    }),
                     ..Default::default()
                 };
             }
             if yi == y - 1 {
                 space_domain[xi][yi] = Cell {
-                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell),
-                    boundary_condition_velocity: [1.0, 0.0],
+                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell {
+                        boundary_condition_velocity: [1.0, 0.0],
+                    }),
                     ..Default::default()
                 }
             }
@@ -49,21 +51,19 @@ pub fn lid_driven_cavity() -> SimulationPreset {
                 cell_type: CellType::VoidCell,
                 ..Default::default()
             };
-
         }
     }
-    
-    let delta_space = [x_length/(x as f32), y_length/(y as f32)];
+
+    let delta_space = [x_length / (x as f32), y_length / (y as f32)];
     let gamma = 0.9;
 
     SimulationPreset {
         space_domain: SpaceDomain::new(space_domain, delta_space, gamma),
         delta_time: 0.005,
         reynolds: 1000.0,
-        acceleration: [0.0, 0.0]
+        acceleration: [0.0, 0.0],
     }
 }
-
 
 pub fn backward_facing_step() -> SimulationPreset {
     let x_length = 15.0;
@@ -99,7 +99,9 @@ pub fn backward_facing_step() -> SimulationPreset {
             }
             if yi == y - 1 || yi == 0 {
                 space_domain[xi][yi] = Cell {
-                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell),
+                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell {
+                        boundary_condition_velocity: [0.0, 0.0],
+                    }),
                     ..Default::default()
                 };
                 continue;
@@ -112,7 +114,6 @@ pub fn backward_facing_step() -> SimulationPreset {
                 cell_type: CellType::VoidCell,
                 ..Default::default()
             };
-
         }
     }
 
@@ -127,25 +128,26 @@ pub fn backward_facing_step() -> SimulationPreset {
 
     for xi in 0..76 {
         for yi in 0..38 {
-            if xi == 75 || yi == 37{
+            if xi == 75 || yi == 37 {
                 space_domain[xi][yi] = Cell {
-                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell),
+                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell {
+                        boundary_condition_velocity: [0.0, 0.0],
+                    }),
                     ..Default::default()
                 };
             }
         }
     }
-    
-    let delta_space = [x_length/(x as f32), y_length/(y as f32)];
+
+    let delta_space = [x_length / (x as f32), y_length / (y as f32)];
     let gamma = 0.9;
     SimulationPreset {
         space_domain: SpaceDomain::new(space_domain, delta_space, gamma),
         delta_time: 0.005,
         reynolds: 1000.0,
-        acceleration: [0.0, 0.0]
+        acceleration: [0.0, 0.0],
     }
 }
-
 
 pub fn cylinder_cross_flow() -> SimulationPreset {
     let x_length = 11.0;
@@ -161,7 +163,6 @@ pub fn cylinder_cross_flow() -> SimulationPreset {
         }
         space_domain.push(row);
     }
-
 
     for xi in 0..x {
         for yi in 0..y {
@@ -182,7 +183,9 @@ pub fn cylinder_cross_flow() -> SimulationPreset {
             }
             if yi == y - 1 || yi == 0 {
                 space_domain[xi][yi] = Cell {
-                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell),
+                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell {
+                        boundary_condition_velocity: [0.0, 0.0],
+                    }),
                     ..Default::default()
                 };
                 continue;
@@ -195,35 +198,36 @@ pub fn cylinder_cross_flow() -> SimulationPreset {
                 cell_type: CellType::VoidCell,
                 ..Default::default()
             };
-
         }
     }
 
     let radius = 5.0;
     let center = [20, 20];
-    
+
     for xi in 14..26 as i32 {
         for yi in 14..26 as i32 {
             let x_dist = xi - center[0];
             let y_dist = yi - center[1];
-            let distance = ((x_dist * x_dist + y_dist * y_dist) as f32 ).sqrt();
-    
+            let distance = ((x_dist * x_dist + y_dist * y_dist) as f32).sqrt();
+
             if distance <= radius {
                 space_domain[xi as usize][yi as usize] = Cell {
-                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell),
+                    cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell {
+                        boundary_condition_velocity: [0.0, 0.0],
+                    }),
                     ..Default::default()
                 };
             }
         }
     }
-    
-    let delta_space = [x_length/(x as f32), y_length/(y as f32)];
+
+    let delta_space = [x_length / (x as f32), y_length / (y as f32)];
     let gamma = 0.9;
-    
+
     SimulationPreset {
         space_domain: SpaceDomain::new(space_domain, delta_space, gamma),
         delta_time: 0.005,
         reynolds: 100.0,
-        acceleration: [0.0, 0.0]
+        acceleration: [0.0, 0.0],
     }
 }
