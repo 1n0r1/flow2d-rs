@@ -20,7 +20,7 @@ Lid-driven cavity
 
 ## Features
 - 2D viscous incompressible Newtonian fluid flow
-- Solve Navier-Stokes equations flow using Euler's Method
+- Solve Navier-Stokes equations using Euler's Method on staggered grid
 - Solve Poisson equation with Successive Over-relaxation method
 - Calculate and visualize pressure, speed and stream function
 - Different types of boundary conditions:
@@ -31,7 +31,8 @@ Lid-driven cavity
   - Standalone crate just for the simulation (without GUI)
   - Contour plot for stream function
   - Free boundary value simulation
-  - Use other method to solve Poisson equation
+  - HDF5 data export
+  - Use other method to solve Poisson equation (possibly Multigrid)
   - Optimize to run on GPU
   - Energy/Heat flow simulation
   - Extension to 3D
