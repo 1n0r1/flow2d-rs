@@ -7,6 +7,8 @@ edition = "2021"
 opt-level = 3
 
 [dependencies]
+rayon = "1.8"
+
+[dev-dependencies]
 iced = {version = "0.10", features = ["canvas", "tokio"]}
 plotters = "0.3.3"
-rayon = "1.8"

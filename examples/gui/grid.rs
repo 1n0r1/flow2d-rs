@@ -1,7 +1,6 @@
-use crate::cell;
-use crate::cell::Cell;
-use crate::cell::CellType;
-use crate::simulation::Simulation;
+use flow2d_rs::cell::Cell;
+use flow2d_rs::cell::CellType;
+use flow2d_rs::simulation::Simulation;
 
 use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Program, Stroke};
 use iced::{mouse, Color, Element, Length, Point, Renderer, Size, Theme};
@@ -136,8 +135,8 @@ impl Grid {
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
                         // color_presure(cell, pressure_range),
-                        color_speed(cell, speed_range),
-                        // color_psi(cell, psi_range),
+                        // color_speed(cell, speed_range),
+                        color_psi(cell, psi_range),
                     );
                 }
             }
@@ -152,7 +151,7 @@ impl Grid {
                 // if x % 2 != 0 || y % 2 != 0 {
                 //     continue;
                 // }
-                if let cell::CellType::FluidCell = cell.cell_type {
+                if let CellType::FluidCell = cell.cell_type {
                     let pos_x = delta_x * (x as f32);
                     let reversed_y = row.len() - 1 - y;
                     let pos_y = delta_y * (reversed_y as f32);

@@ -82,27 +82,29 @@ impl SpaceDomain {
 
     pub fn update_psi(&mut self) {
         self.psi_range = [0.0, 0.0];
-        for x in 0..self.space_size[0] {
-            self.space_domain[x][0].psi = 0.0;
+
+        self.space_domain.iter_mut().for_each(|xi| {
+            xi[0].psi = 0.0;
             for y in 1..self.space_size[1] {
-                match self.space_domain[x][y].cell_type {
+                match xi[y].cell_type {
                     CellType::FluidCell => {
-                        self.space_domain[x][y].psi = self.space_domain[x][y - 1].psi
-                            + self.space_domain[x][y].velocity[0] * self.delta_space[1];
-                        if self.space_domain[x][y].psi < self.psi_range[0] {
-                            self.psi_range[0] = self.space_domain[x][y].psi;
+                        xi[y].psi = xi[y - 1].psi
+                            + xi[y].velocity[0] * self.delta_space[1];
+                        if xi[y].psi < self.psi_range[0] {
+                            self.psi_range[0] = xi[y].psi;
                         }
-                        if self.space_domain[x][y].psi > self.psi_range[1] {
-                            self.psi_range[1] = self.space_domain[x][y].psi;
+                        if xi[y].psi > self.psi_range[1] {
+                            self.psi_range[1] = xi[y].psi;
                         }
                     }
                     _ => {
-                        self.space_domain[x][y].psi = self.space_domain[x][y - 1].psi;
+                        xi[y].psi = xi[y - 1].psi;
                     }
                 }
             }
-        }
+        });
     }
+
 
     pub fn update_pressure_and_speed_range(&mut self) {
         let (min_pressure, max_pressure, min_speed, max_speed) = self

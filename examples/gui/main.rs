@@ -1,8 +1,4 @@
-mod cell;
 mod grid;
-mod presets;
-mod simulation;
-mod space_domain;
 
 use grid::Grid;
 

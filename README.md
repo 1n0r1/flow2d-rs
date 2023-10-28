@@ -28,7 +28,6 @@ Lid-driven cavity
   - Free slip boundary condition
   - Inflow and outflow condition
 - Planned features:
-  - Standalone crate just for the simulation (without GUI)
   - Contour plot for stream function
   - Free boundary value simulation
   - HDF5 data export
@@ -42,7 +41,7 @@ Lid-driven cavity
 ```bash
   git clone https://github.com/1n0r1/flow2d-rs.git
   cd flow2d-rs
-  cargo run
+  cargo run --example gui
 ```
 Refer to `./src/presets.rs` for setting up other simulations.
 

@@ -1,10 +1,8 @@
-use crate::cell::BoundaryConditionCell;
 use crate::cell::Cell;
 use crate::cell::CellType;
-use crate::space_domain;
+use crate::space_domain::SpaceDomain;
 
 use crate::presets;
-use crate::space_domain::SpaceDomain;
 
 const OMEGA: f32 = 1.7; // 0 <= OMEGA <= 2
 const ITR_MAX: usize = 100;
@@ -21,7 +19,7 @@ pub struct Simulation {
 
 impl Default for Simulation {
     fn default() -> Self {
-        let preset = presets::backward_facing_step();
+        let preset = presets::cylinder_cross_flow();
 
         Self {
             space_domain: preset.space_domain,
@@ -142,13 +140,11 @@ impl Simulation {
         let delta_space = self.space_domain.get_delta_space();
 
         for _ in 0..ITR_MAX {
-            let mut residual_norm: f32 = 0.0;
-
-            for x in 0..space_size[0] {
-                for y in 0..space_size[1] {
+            let residual_norm : f32 = (0..space_size[0]).into_iter().map(|x| -> f32{
+                (0..space_size[1]).into_iter().map(|y| -> f32 {
                     match self.space_domain.get_cell(x, y).cell_type {
                         CellType::FluidCell => {
-                            residual_norm += ((self.space_domain.get_cell(x + 1, y).pressure
+                            ((self.space_domain.get_cell(x + 1, y).pressure
                                 - 2.0 * self.space_domain.get_cell(x, y).pressure
                                 + self.space_domain.get_cell(x - 1, y).pressure)
                                 / delta_space[0].powi(2)
@@ -157,14 +153,15 @@ impl Simulation {
                                     + self.space_domain.get_cell(x, y - 1).pressure)
                                     / delta_space[1].powi(2)
                                 - self.space_domain.get_cell(x, y).rhs)
-                                .powi(2);
+                                .powi(2)
                         }
-                        _ => {}
+                        _ => 0.0
                     }
-                }
-            }
-            let res_norm = (residual_norm / (space_size[0] as f32) / (space_size[1] as f32)).sqrt();
+                }).sum()
+            }).sum();
 
+
+            let res_norm = (residual_norm / (space_size[0] as f32) / (space_size[1] as f32)).sqrt();
             if res_norm < POISSON_EPSILON {
                 break;
             }
