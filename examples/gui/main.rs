@@ -123,7 +123,7 @@ fn view_controls<'a>(is_playing: bool, speed: usize) -> Element<'a, Message> {
     .spacing(10);
 
     let speed_controls = row![
-        slider(1.0..=150.0, speed as f32, Message::SpeedChanged),
+        slider(1.0..=300.0, speed as f32, Message::SpeedChanged),
         text(format!("x{speed}")).size(16),
     ]
     .width(Length::Fill)

@@ -19,7 +19,7 @@ pub struct Simulation {
 
 impl Default for Simulation {
     fn default() -> Self {
-        let preset = presets::cylinder_cross_flow();
+        let preset = presets::backward_facing_step();
 
         Self {
             space_domain: preset.space_domain,
@@ -139,8 +139,23 @@ impl Simulation {
         let space_size = self.space_domain.get_space_size();
         let delta_space = self.space_domain.get_delta_space();
 
+        let mut fluid_cell_count = 0;
+        let mut initial_pressure_norm : f32 = (0..space_size[0]).into_iter().map(|x| -> f32{
+            (0..space_size[1]).into_iter().map(|y| -> f32 {
+                match self.space_domain.get_cell(x, y).cell_type {
+                    CellType::FluidCell => {
+                        fluid_cell_count += 1;
+                        (self.space_domain.get_cell(x, y)).pressure.powi(2)
+                    }
+                    _ => 0.0
+                }
+            }).sum()
+        }).sum::<f32>()/(fluid_cell_count as f32);
+
+        initial_pressure_norm = initial_pressure_norm.sqrt();
+
         for _ in 0..ITR_MAX {
-            let residual_norm : f32 = (0..space_size[0]).into_iter().map(|x| -> f32{
+            let mut residual_norm : f32 = (0..space_size[0]).into_iter().map(|x| -> f32{
                 (0..space_size[1]).into_iter().map(|y| -> f32 {
                     match self.space_domain.get_cell(x, y).cell_type {
                         CellType::FluidCell => {
@@ -160,9 +175,9 @@ impl Simulation {
                 }).sum()
             }).sum();
 
+            residual_norm = (residual_norm /(fluid_cell_count as f32)).sqrt();
 
-            let res_norm = (residual_norm / (space_size[0] as f32) / (space_size[1] as f32)).sqrt();
-            if res_norm < POISSON_EPSILON {
+            if residual_norm < POISSON_EPSILON || residual_norm < initial_pressure_norm*POISSON_EPSILON {
                 break;
             }
 
