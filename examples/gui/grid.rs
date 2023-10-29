@@ -9,7 +9,7 @@ use plotters::prelude::*;
 
 #[derive(Default)]
 pub struct Grid {
-    space_time_domain: Simulation,
+    simulation: Simulation,
     next_cache: Cache,
     vector_cache: Cache,
     contour_cache: Cache,
@@ -17,7 +17,7 @@ pub struct Grid {
 
 impl Grid {
     pub fn get_time(&self) -> f32 {
-        self.space_time_domain.get_time()
+        self.simulation.get_time()
     }
 
     pub fn view(&self) -> Element<()> {
@@ -28,7 +28,7 @@ impl Grid {
     }
 
     pub fn tick(&mut self) {
-        self.space_time_domain.iterate_one_timestep();
+        self.simulation.iterate_one_timestep();
         self.next_cache.clear();
         self.vector_cache.clear();
         self.contour_cache.clear();
@@ -36,12 +36,12 @@ impl Grid {
 
     pub fn export_image(&self) {
         let scale = 20.0;
-        let space_size = self.space_time_domain.get_space_size();
-        let delta_space = self.space_time_domain.get_delta_space();
+        let space_size = self.simulation.get_space_size();
+        let delta_space = self.simulation.get_delta_space();
 
-        let pressure_range = self.space_time_domain.get_pressure_range();
-        let speed_range = self.space_time_domain.get_speed_range();
-        let psi_range = self.space_time_domain.get_psi_range();
+        let pressure_range = self.simulation.get_pressure_range();
+        let speed_range = self.simulation.get_speed_range();
+        let psi_range = self.simulation.get_psi_range();
 
         let pixel_scale = [scale * delta_space[0], scale * delta_space[1]];
         let drawing_area = BitMapBackend::new(
@@ -54,12 +54,12 @@ impl Grid {
         .into_drawing_area();
         drawing_area.fill(&WHITE).unwrap();
 
-        for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
-            for (y, cell) in row.iter().enumerate() {
+        for x in 0..self.simulation.get_space_size()[0] {
+            for y in 0..self.simulation.get_space_size()[1] {
                 let pos_x = x as i32;
-                let reversed_y = row.len() - 1 - y;
+                let reversed_y = self.simulation.get_space_size()[1] - 1 - y;
                 let pos_y = reversed_y as i32;
-                let color = color_speed(cell, speed_range);
+                let color = color_speed(self.simulation.get_cell(x, y), speed_range);
                 drawing_area
                     .draw(&Rectangle::new(
                         [
@@ -119,24 +119,23 @@ impl Grid {
         frame.fill(&background, Color::from_rgb8(0x40, 0x44, 0x4B));
 
         frame.with_save(|frame| {
-            let delta_x = self.space_time_domain.get_delta_space()[0];
-            let delta_y = self.space_time_domain.get_delta_space()[1];
-            let pressure_range = self.space_time_domain.get_pressure_range();
-            let speed_range = self.space_time_domain.get_speed_range();
-            let psi_range = self.space_time_domain.get_psi_range();
+            let delta_x = self.simulation.get_delta_space()[0];
+            let delta_y = self.simulation.get_delta_space()[1];
+            let pressure_range = self.simulation.get_pressure_range();
+            let speed_range = self.simulation.get_speed_range();
+            let psi_range = self.simulation.get_psi_range();
 
-            for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
-                for (y, cell) in row.iter().enumerate() {
+            for x in 0..self.simulation.get_space_size()[0] {
+                for y in 0..self.simulation.get_space_size()[1] {
                     let pos_x = delta_x * (x as f32);
-                    let reversed_y = row.len() - 1 - y;
+                    let reversed_y = self.simulation.get_space_size()[1] - 1 - y;
                     let pos_y = delta_y * (reversed_y as f32);
-
                     frame.fill_rectangle(
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
                         // color_presure(cell, pressure_range),
                         // color_speed(cell, speed_range),
-                        color_psi(cell, psi_range),
+                        color_psi(self.simulation.get_cell(x, y), psi_range),
                     );
                 }
             }
@@ -144,20 +143,20 @@ impl Grid {
     }
 
     fn draw_velocity_vector(&self, frame: &mut Frame) {
-        let delta_x = self.space_time_domain.get_delta_space()[0];
-        let delta_y = self.space_time_domain.get_delta_space()[1];
-        for (x, row) in self.space_time_domain.get_space().iter().enumerate() {
-            for (y, cell) in row.iter().enumerate() {
+        let delta_x = self.simulation.get_delta_space()[0];
+        let delta_y = self.simulation.get_delta_space()[1];
+        for x in 0..self.simulation.get_space_size()[0] {
+            for y in 0..self.simulation.get_space_size()[1] {
                 // if x % 2 != 0 || y % 2 != 0 {
                 //     continue;
                 // }
-                if let CellType::FluidCell = cell.cell_type {
+                if let CellType::FluidCell = self.simulation.get_cell(x, y).cell_type {
                     let pos_x = delta_x * (x as f32);
-                    let reversed_y = row.len() - 1 - y;
+                    let reversed_y = self.simulation.get_space_size()[1] - 1 - y;
                     let pos_y = delta_y * (reversed_y as f32);
 
                     let velocity_scale = 0.1;
-                    let velocity = self.space_time_domain.get_centered_velocity(x, y);
+                    let velocity = self.simulation.get_centered_velocity(x, y);
 
                     let vector_start = Point::new(pos_x + delta_x / 2.0, pos_y + delta_y / 2.0);
                     let vector_end = Point::new(

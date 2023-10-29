@@ -40,8 +40,8 @@ impl Simulation {
         self.space_domain.get_space_size()
     }
 
-    pub fn get_space(&self) -> &Vec<Vec<Cell>> {
-        self.space_domain.get_space()
+    pub fn get_cell(&self, x: usize, y: usize) -> &Cell {
+        self.space_domain.get_cell(x, y)
     }
 
     pub fn get_time(&self) -> f32 {
@@ -140,44 +140,59 @@ impl Simulation {
         let delta_space = self.space_domain.get_delta_space();
 
         let mut fluid_cell_count = 0;
-        let mut initial_pressure_norm : f32 = (0..space_size[0]).into_iter().map(|x| -> f32{
-            (0..space_size[1]).into_iter().map(|y| -> f32 {
-                match self.space_domain.get_cell(x, y).cell_type {
-                    CellType::FluidCell => {
-                        fluid_cell_count += 1;
-                        (self.space_domain.get_cell(x, y)).pressure.powi(2)
-                    }
-                    _ => 0.0
-                }
-            }).sum()
-        }).sum::<f32>()/(fluid_cell_count as f32);
+        let mut initial_pressure_norm: f32 = (0..space_size[0])
+            .into_iter()
+            .map(|x| -> f32 {
+                (0..space_size[1])
+                    .into_iter()
+                    .map(|y| -> f32 {
+                        match self.space_domain.get_cell(x, y).cell_type {
+                            CellType::FluidCell => {
+                                fluid_cell_count += 1;
+                                (self.space_domain.get_cell(x, y)).pressure.powi(2)
+                            }
+                            _ => 0.0,
+                        }
+                    })
+                    .sum()
+            })
+            .sum::<f32>()
+            / (fluid_cell_count as f32);
 
         initial_pressure_norm = initial_pressure_norm.sqrt();
 
         for _ in 0..ITR_MAX {
-            let mut residual_norm : f32 = (0..space_size[0]).into_iter().map(|x| -> f32{
-                (0..space_size[1]).into_iter().map(|y| -> f32 {
-                    match self.space_domain.get_cell(x, y).cell_type {
-                        CellType::FluidCell => {
-                            ((self.space_domain.get_cell(x + 1, y).pressure
-                                - 2.0 * self.space_domain.get_cell(x, y).pressure
-                                + self.space_domain.get_cell(x - 1, y).pressure)
-                                / delta_space[0].powi(2)
-                                + (self.space_domain.get_cell(x, y + 1).pressure
-                                    - 2.0 * self.space_domain.get_cell(x, y).pressure
-                                    + self.space_domain.get_cell(x, y - 1).pressure)
-                                    / delta_space[1].powi(2)
-                                - self.space_domain.get_cell(x, y).rhs)
-                                .powi(2)
-                        }
-                        _ => 0.0
-                    }
-                }).sum()
-            }).sum();
+            let mut residual_norm: f32 = (0..space_size[0])
+                .into_iter()
+                .map(|x| -> f32 {
+                    (0..space_size[1])
+                        .into_iter()
+                        .map(|y| -> f32 {
+                            match self.space_domain.get_cell(x, y).cell_type {
+                                CellType::FluidCell => {
+                                    ((self.space_domain.get_cell(x + 1, y).pressure
+                                        - 2.0 * self.space_domain.get_cell(x, y).pressure
+                                        + self.space_domain.get_cell(x - 1, y).pressure)
+                                        / delta_space[0].powi(2)
+                                        + (self.space_domain.get_cell(x, y + 1).pressure
+                                            - 2.0 * self.space_domain.get_cell(x, y).pressure
+                                            + self.space_domain.get_cell(x, y - 1).pressure)
+                                            / delta_space[1].powi(2)
+                                        - self.space_domain.get_cell(x, y).rhs)
+                                        .powi(2)
+                                }
+                                _ => 0.0,
+                            }
+                        })
+                        .sum()
+                })
+                .sum();
 
-            residual_norm = (residual_norm /(fluid_cell_count as f32)).sqrt();
+            residual_norm = (residual_norm / (fluid_cell_count as f32)).sqrt();
 
-            if residual_norm < POISSON_EPSILON || residual_norm < initial_pressure_norm*POISSON_EPSILON {
+            if residual_norm < POISSON_EPSILON
+                || residual_norm < initial_pressure_norm * POISSON_EPSILON
+            {
                 break;
             }
 
@@ -225,12 +240,7 @@ impl Simulation {
                     self.space_domain.get_cell_mut(x, y).pressure = 0.0;
 
                     for (dx, dy) in neighboring_cells.iter() {
-                        if let Some(cell) = self
-                            .space_domain
-                            .get_space()
-                            .get(*dx)
-                            .and_then(|row| row.get(*dy))
-                        {
+                        if let Some(cell) = self.space_domain.try_get_cell(*dx, *dy) {
                             match cell.cell_type {
                                 CellType::FluidCell => {
                                     self.space_domain.get_cell_mut(x, y).pressure += cell.pressure;
@@ -240,6 +250,7 @@ impl Simulation {
                             }
                         }
                     }
+
                     if neighboring_fluid_count != 0 {
                         self.space_domain.get_cell_mut(x, y).pressure =
                             self.space_domain.get_cell(x, y).pressure
