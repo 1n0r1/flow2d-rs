@@ -1,16 +1,15 @@
 mod grid;
 
-use grid::{Preset, ALLPRESET, Grid, ALLCOLORTYPE, ColorType};
+use grid::{ColorType, Grid, Preset, ALLCOLORTYPE, ALLPRESET};
 
 use std::time::{Duration, Instant};
 
-use iced::{executor};
+use iced::executor;
 use iced::theme::{self, Theme};
 use iced::time;
-use iced::widget::{button, column, container, row, slider, text, pick_list, checkbox};
+use iced::widget::{button, checkbox, column, container, pick_list, row, slider, text};
 use iced::window;
 use iced::{Alignment, Application, Command, Element, Length, Settings, Subscription};
-
 
 pub fn main() -> iced::Result {
     Flow2dGUI::run(Settings {
@@ -32,7 +31,7 @@ struct Flow2dGUI {
     speed: usize,
     preset: Preset,
     color_type: ColorType,
-    zoom: f32
+    zoom: f32,
 }
 
 #[derive(Debug, Clone)]
@@ -49,7 +48,6 @@ enum Message {
     None,
 }
 
-
 impl std::fmt::Display for Preset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -58,7 +56,7 @@ impl std::fmt::Display for Preset {
             match self {
                 Preset::CylinderCrossFlow => "Cylinder Cross Flow",
                 Preset::BackwardFacingStep => "Backward Facing Step",
-                Preset::LidDrivenCavity => "Lid Driven Cavity"
+                Preset::LidDrivenCavity => "Lid Driven Cavity",
             }
         )
     }
@@ -72,7 +70,7 @@ impl std::fmt::Display for ColorType {
             match self {
                 ColorType::Pressure => "Pressure",
                 ColorType::Speed => "Speed",
-                ColorType::Streamline => "Streamline"
+                ColorType::Streamline => "Streamline",
             }
         )
     }
@@ -116,19 +114,19 @@ impl Application for Flow2dGUI {
             Message::PresetPicked(preset) => {
                 self.preset = preset;
                 self.grid.set_preset(preset);
-            },
+            }
             Message::ZoomChanged(zoom) => {
                 self.grid.set_zoom(zoom);
                 self.zoom = zoom;
-            },
-            Message::ColorTypePicked(color_type)  => {
+            }
+            Message::ColorTypePicked(color_type) => {
                 self.color_type = color_type;
                 self.grid.set_color_type(color_type);
-            },
+            }
             Message::ToggleVelocity(is_velocity_enabled) => {
                 self.is_velocity_enabled = is_velocity_enabled;
                 self.grid.set_show_velocity(is_velocity_enabled);
-            },
+            }
             Message::None => {}
         }
         Command::none()
@@ -143,7 +141,14 @@ impl Application for Flow2dGUI {
     }
 
     fn view(&self) -> Element<Message> {
-        let controls = view_controls(self.is_playing, self.is_velocity_enabled, self.speed, self.preset, self.color_type, self.zoom);
+        let controls = view_controls(
+            self.is_playing,
+            self.is_velocity_enabled,
+            self.speed,
+            self.preset,
+            self.color_type,
+            self.zoom,
+        );
 
         let content = column![
             self.grid.view().map(move |_| { Message::None }),
@@ -162,7 +167,14 @@ impl Application for Flow2dGUI {
     }
 }
 
-fn view_controls<'a>(is_playing: bool, is_velocity_enabled: bool, speed: usize, preset: Preset, color_type: ColorType, zoom: f32) -> Element<'a, Message> {
+fn view_controls<'a>(
+    is_playing: bool,
+    is_velocity_enabled: bool,
+    speed: usize,
+    preset: Preset,
+    color_type: ColorType,
+    zoom: f32,
+) -> Element<'a, Message> {
     let playback_controls = row![
         button(if is_playing { "Pause" } else { "Play" }).on_press(Message::TogglePlayback),
         button("Next")

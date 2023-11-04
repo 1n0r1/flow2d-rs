@@ -210,7 +210,7 @@ pub fn cylinder_cross_flow() -> SimulationPreset {
             let y_dist = yi - center[1];
             let distance = ((x_dist * x_dist + y_dist * y_dist) as f32).sqrt();
 
-            if distance <= radius {
+            if distance < radius {
                 space_domain[xi as usize][yi as usize] = Cell {
                     cell_type: CellType::BoundaryConditionCell(BoundaryConditionCell::NoSlipCell {
                         boundary_condition_velocity: [0.0, 0.0],

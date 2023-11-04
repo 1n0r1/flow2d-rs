@@ -139,8 +139,8 @@ impl SpaceDomain {
         self.speed_range = [min_speed, max_speed];
     }
 
-    // Set u, v, F, G, p boundary conditions
-    pub fn update_boundary_conditions(&mut self) {
+    // Set u, v, boundary conditions
+    pub fn update_boundary_velocities(&mut self) {
         let x_size = self.space_size[0];
         let y_size = self.space_size[1];
 
@@ -161,317 +161,195 @@ impl SpaceDomain {
                         BoundaryConditionCell::NoSlipCell {
                             boundary_condition_velocity,
                         } => {
-                            self.get_cell_mut(x, y).pressure = 0.0;
-                            let mut neighboring_fluid_count = 0;
-                            if let Some(left_cell_type) = left_cell_type {
-                                match left_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x - 1, y).velocity[0] = 0.0;
-                                        self.get_cell_mut(x, y).velocity[1] = 2.0
-                                            * boundary_condition_velocity[1]
-                                            - self.get_cell(x - 1, y).velocity[1];
+                            if let Some(CellType::FluidCell) = left_cell_type {
+                                self.get_cell_mut(x - 1, y).velocity[0] = 0.0;
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x - 1, y).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x - 1, y).f =
-                                            self.get_cell(x - 1, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = top_cell_type {
+                                    self.get_cell_mut(x, y).velocity[1] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[1] = 2.0
+                                        * boundary_condition_velocity[1]
+                                        - self.get_cell(x - 1, y).velocity[1];
                                 }
                             }
-                            if let Some(right_cell_type) = right_cell_type {
-                                match right_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).velocity = [
-                                            0.0,
-                                            2.0 * boundary_condition_velocity[1]
-                                                - self.get_cell(x + 1, y).velocity[1],
-                                        ];
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x + 1, y).pressure;
-                                        neighboring_fluid_count += 1;
+                            if let Some(CellType::FluidCell) = right_cell_type {
+                                self.get_cell_mut(x, y).velocity[0] = 0.0;
 
-                                        self.get_cell_mut(x, y).f = self.get_cell(x, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = top_cell_type {
+                                    self.get_cell_mut(x, y).velocity[1] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[1] = 2.0
+                                        * boundary_condition_velocity[1]
+                                        - self.get_cell(x + 1, y).velocity[1];
                                 }
                             }
-                            if let Some(bottom_cell_type) = bottom_cell_type {
-                                match bottom_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y - 1).velocity[1] = 0.0;
-                                        self.get_cell_mut(x, y).velocity[0] = 2.0
-                                            * boundary_condition_velocity[0]
-                                            - self.get_cell(x, y - 1).velocity[0];
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y - 1).pressure;
-                                        neighboring_fluid_count += 1;
+                            if let Some(CellType::FluidCell) = bottom_cell_type {
+                                self.get_cell_mut(x, y - 1).velocity[1] = 0.0;
 
-                                        self.get_cell_mut(x, y - 1).g =
-                                            self.get_cell(x, y - 1).velocity[1];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = right_cell_type {
+                                    self.get_cell_mut(x, y).velocity[0] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[0] = 2.0
+                                        * boundary_condition_velocity[0]
+                                        - self.get_cell(x, y - 1).velocity[0];
                                 }
                             }
-                            if let Some(top_cell_type) = top_cell_type {
-                                match top_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).velocity = [
-                                            2.0 * boundary_condition_velocity[0]
-                                                - self.get_cell(x, y + 1).velocity[0],
-                                            0.0,
-                                        ];
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y + 1).pressure;
-                                        neighboring_fluid_count += 1;
+                            if let Some(CellType::FluidCell) = top_cell_type {
+                                self.get_cell_mut(x, y).velocity[1] = 0.0;
 
-                                        self.get_cell_mut(x, y).g = self.get_cell(x, y).velocity[1];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = right_cell_type {
+                                    self.get_cell_mut(x, y).velocity[0] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[0] = 2.0
+                                        * boundary_condition_velocity[0]
+                                        - self.get_cell(x, y + 1).velocity[0];
                                 }
-                            }
-                            if neighboring_fluid_count != 0 {
-                                self.get_cell_mut(x, y).pressure =
-                                    self.get_cell(x, y).pressure / (neighboring_fluid_count as f32)
                             }
                         }
 
                         BoundaryConditionCell::FreeSlipCell => {
-                            self.get_cell_mut(x, y).pressure = 0.0;
-                            let mut neighboring_fluid_count = 0;
-                            if let Some(left_cell_type) = left_cell_type {
-                                match left_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x - 1, y).velocity[0] = 0.0;
-                                        self.get_cell_mut(x, y).velocity[1] =
-                                            self.get_cell(x - 1, y).velocity[1];
+                            if let Some(CellType::FluidCell) = left_cell_type {
+                                self.get_cell_mut(x - 1, y).velocity[0] = 0.0;
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x - 1, y).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x - 1, y).f =
-                                            self.get_cell(x - 1, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = top_cell_type {
+                                    self.get_cell_mut(x, y).velocity[1] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[1] =
+                                        self.get_cell(x - 1, y).velocity[1];
                                 }
                             }
-                            if let Some(right_cell_type) = right_cell_type {
-                                match right_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).velocity =
-                                            [0.0, self.get_cell(x + 1, y).velocity[1]];
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x + 1, y).pressure;
-                                        neighboring_fluid_count += 1;
+                            if let Some(CellType::FluidCell) = right_cell_type {
+                                self.get_cell_mut(x, y).velocity[0] = 0.0;
 
-                                        self.get_cell_mut(x, y).f = self.get_cell(x, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = top_cell_type {
+                                    self.get_cell_mut(x, y).velocity[1] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[1] =
+                                        self.get_cell(x + 1, y).velocity[1];
                                 }
                             }
-                            if let Some(bottom_cell_type) = bottom_cell_type {
-                                match bottom_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y - 1).velocity[1] = 0.0;
-                                        self.get_cell_mut(x, y).velocity[0] =
-                                            self.get_cell(x, y - 1).velocity[0];
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y - 1).pressure;
-                                        neighboring_fluid_count += 1;
+                            if let Some(CellType::FluidCell) = bottom_cell_type {
+                                self.get_cell_mut(x, y - 1).velocity[1] = 0.0;
 
-                                        self.get_cell_mut(x, y - 1).g =
-                                            self.get_cell(x, y - 1).velocity[1];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = right_cell_type {
+                                    self.get_cell_mut(x, y).velocity[0] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[0] =
+                                        self.get_cell(x, y - 1).velocity[0];
                                 }
                             }
-                            if let Some(top_cell_type) = top_cell_type {
-                                match top_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).velocity =
-                                            [self.get_cell(x, y + 1).velocity[0], 0.0];
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y + 1).pressure;
-                                        neighboring_fluid_count += 1;
+                            if let Some(CellType::FluidCell) = top_cell_type {
+                                self.get_cell_mut(x, y).velocity[1] = 0.0;
 
-                                        self.get_cell_mut(x, y).g = self.get_cell(x, y).velocity[1];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                if let Some(CellType::FluidCell) = right_cell_type {
+                                    self.get_cell_mut(x, y).velocity[0] = 0.0;
+                                } else {
+                                    self.get_cell_mut(x, y).velocity[0] =
+                                        self.get_cell(x, y + 1).velocity[0];
                                 }
-                            }
-                            if neighboring_fluid_count != 0 {
-                                self.get_cell_mut(x, y).pressure =
-                                    self.get_cell(x, y).pressure / (neighboring_fluid_count as f32)
                             }
                         }
 
                         BoundaryConditionCell::OutFlowCell => {
-                            self.get_cell_mut(x, y).pressure = 0.0;
-                            let mut neighboring_fluid_count = 0;
-                            if let Some(left_cell_type) = left_cell_type {
-                                match left_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x - 1, y).velocity[0] =
-                                            self.get_cell(x - 2, y).velocity[0];
-                                        self.get_cell_mut(x, y).velocity[1] =
-                                            self.get_cell(x - 1, y).velocity[1];
-
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x - 1, y).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x - 1, y).f =
-                                            self.get_cell(x - 1, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
-                                }
+                            if let Some(CellType::FluidCell) = left_cell_type {
+                                self.get_cell_mut(x - 1, y).velocity[0] =
+                                    self.get_cell(x - 2, y).velocity[0];
+                                self.get_cell_mut(x, y).velocity[1] =
+                                    self.get_cell(x - 1, y).velocity[1];
                             }
-                            if let Some(right_cell_type) = right_cell_type {
-                                match right_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).velocity = [
-                                            self.get_cell(x + 1, y).velocity[0],
-                                            self.get_cell(x + 1, y).velocity[1],
-                                        ];
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x + 1, y).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x, y).f = self.get_cell(x, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
-                                }
+                            if let Some(CellType::FluidCell) = right_cell_type {
+                                self.get_cell_mut(x, y).velocity = [
+                                    self.get_cell(x + 1, y).velocity[0],
+                                    self.get_cell(x + 1, y).velocity[1],
+                                ];
                             }
-                            if let Some(bottom_cell_type) = bottom_cell_type {
-                                match bottom_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).velocity[0] =
-                                            self.get_cell(x, y - 1).velocity[0];
-                                        self.get_cell_mut(x, y - 1).velocity[1] =
-                                            self.get_cell(x, y - 2).velocity[1];
-
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y - 1).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x, y - 1).g =
-                                            self.get_cell(x, y - 1).velocity[1];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
-                                }
+                            if let Some(CellType::FluidCell) = bottom_cell_type {
+                                self.get_cell_mut(x, y).velocity[0] =
+                                    self.get_cell(x, y - 1).velocity[0];
+                                self.get_cell_mut(x, y - 1).velocity[1] =
+                                    self.get_cell(x, y - 2).velocity[1];
                             }
-                            if let Some(top_cell_type) = top_cell_type {
-                                match top_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).velocity = [
-                                            self.get_cell(x, y + 1).velocity[0],
-                                            self.get_cell(x, y + 1).velocity[1],
-                                        ];
-
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y + 1).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x, y).g = self.get_cell(x, y).velocity[1];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
-                                }
-                            }
-                            if neighboring_fluid_count != 0 {
-                                self.get_cell_mut(x, y).pressure =
-                                    self.get_cell(x, y).pressure / (neighboring_fluid_count as f32)
+                            if let Some(CellType::FluidCell) = top_cell_type {
+                                self.get_cell_mut(x, y).velocity = [
+                                    self.get_cell(x, y + 1).velocity[0],
+                                    self.get_cell(x, y + 1).velocity[1],
+                                ];
                             }
                         }
+
                         BoundaryConditionCell::InflowCell => {
-                            self.get_cell_mut(x, y).pressure = 0.0;
-                            let mut neighboring_fluid_count = 0;
-                            if let Some(left_cell_type) = left_cell_type {
-                                match left_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x - 1, y).velocity[0] =
-                                            self.get_cell(x, y).velocity[0];
-
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x - 1, y).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x - 1, y).f =
-                                            self.get_cell(x - 1, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
-                                }
+                            if let Some(CellType::FluidCell) = left_cell_type {
+                                self.get_cell_mut(x - 1, y).velocity[0] =
+                                    self.get_cell(x, y).velocity[0];
                             }
-                            if let Some(right_cell_type) = right_cell_type {
-                                match right_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x + 1, y).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x, y).f = self.get_cell(x, y).velocity[0];
-                                    }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
-                                }
+                            if let Some(CellType::FluidCell) = right_cell_type {}
+                            if let Some(CellType::FluidCell) = bottom_cell_type {
+                                self.get_cell_mut(x, y - 1).velocity[1] =
+                                    self.get_cell(x, y).velocity[1];
                             }
-                            if let Some(bottom_cell_type) = bottom_cell_type {
-                                match bottom_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y - 1).velocity[1] =
-                                            self.get_cell(x, y).velocity[1];
+                            if let Some(CellType::FluidCell) = top_cell_type {}
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y - 1).pressure;
-                                        neighboring_fluid_count += 1;
+    // Set F, G, p boundary conditions
+    pub fn update_boundary_pressures_and_fg(&mut self) {
+        let x_size = self.space_size[0];
+        let y_size = self.space_size[1];
 
-                                        self.get_cell_mut(x, y - 1).g =
-                                            self.get_cell(x, y - 1).velocity[1];
+        for x in 0..x_size {
+            for y in 0..y_size {
+                if let CellType::BoundaryConditionCell(_) = self.get_cell(x, y).cell_type {
+                    self.get_cell_mut(x, y).pressure = 0.0;
+                    let mut neighboring_fluid_count = 0;
+
+                    let neighboring_cells = [
+                        (x > 0, x.wrapping_sub(1), y),
+                        (x + 1 < self.space_size[0], x + 1, y),
+                        (y > 0, x, y.wrapping_sub(1)),
+                        (y + 1 < self.space_size[1], x, y + 1),
+                    ];
+
+                    for (has_neighbor, nx, ny) in neighboring_cells.iter() {
+                        if *has_neighbor {
+                            if let CellType::FluidCell = self.get_cell(*nx, *ny).cell_type {
+                                self.get_cell_mut(x, y).pressure +=
+                                    self.get_cell(*nx, *ny).pressure;
+                                neighboring_fluid_count += 1;
+
+                                match (*nx as i32 - x as i32, *ny as i32 - y as i32) {
+                                    (-1, 0) => {
+                                        self.get_cell_mut(*nx, *ny).f =
+                                            self.get_cell(*nx, *ny).velocity[0]
                                     }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
-                                }
-                            }
-                            if let Some(top_cell_type) = top_cell_type {
-                                match top_cell_type {
-                                    CellType::FluidCell => {
-                                        self.get_cell_mut(x, y).pressure +=
-                                            self.get_cell(x, y + 1).pressure;
-                                        neighboring_fluid_count += 1;
-
-                                        self.get_cell_mut(x, y).g = self.get_cell(x, y).velocity[1];
+                                    (1, 0) => {
+                                        self.get_cell_mut(x, y).f = self.get_cell(x, y).velocity[0]
                                     }
-                                    CellType::BoundaryConditionCell(_) => {}
-                                    CellType::VoidCell => {}
+                                    (0, -1) => {
+                                        self.get_cell_mut(*nx, *ny).g =
+                                            self.get_cell(*nx, *ny).velocity[1]
+                                    }
+                                    (0, 1) => {
+                                        self.get_cell_mut(x, y).g = self.get_cell(x, y).velocity[1]
+                                    }
+                                    _ => (),
                                 }
-                            }
-                            if neighboring_fluid_count != 0 {
-                                self.get_cell_mut(x, y).pressure =
-                                    self.get_cell(x, y).pressure / (neighboring_fluid_count as f32)
                             }
                         }
+                    }
+
+                    if neighboring_fluid_count != 0 {
+                        self.get_cell_mut(x, y).pressure /= neighboring_fluid_count as f32;
                     }
                 }
             }

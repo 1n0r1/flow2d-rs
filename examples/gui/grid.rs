@@ -1,7 +1,7 @@
 use flow2d_rs::cell::Cell;
 use flow2d_rs::cell::CellType;
-use flow2d_rs::simulation::Simulation;
 use flow2d_rs::presets;
+use flow2d_rs::simulation::Simulation;
 
 use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Program, Stroke};
 use iced::{mouse, Color, Element, Length, Point, Renderer, Size, Theme};
@@ -15,39 +15,33 @@ pub struct Grid {
     vector_cache: Cache,
     color_type: ColorType,
     zoom: f32,
-    show_velocity: bool
+    show_velocity: bool,
 }
-
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Preset {
     #[default]
     CylinderCrossFlow,
     BackwardFacingStep,
-    LidDrivenCavity
+    LidDrivenCavity,
 }
 
 pub static ALLPRESET: &[Preset] = &[
     Preset::CylinderCrossFlow,
     Preset::BackwardFacingStep,
-    Preset::LidDrivenCavity
+    Preset::LidDrivenCavity,
 ];
-
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum ColorType {
     #[default]
     Pressure,
     Speed,
-    Streamline
+    Streamline,
 }
 
-pub static ALLCOLORTYPE: &[ColorType] = &[
-    ColorType::Pressure,
-    ColorType::Speed,
-    ColorType::Streamline
-];
-
+pub static ALLCOLORTYPE: &[ColorType] =
+    &[ColorType::Pressure, ColorType::Speed, ColorType::Streamline];
 
 impl Grid {
     pub fn set_preset(&mut self, preset: Preset) {
@@ -56,17 +50,16 @@ impl Grid {
         match preset {
             Preset::CylinderCrossFlow => {
                 self.simulation = Simulation::from_preset(presets::cylinder_cross_flow());
-            },
+            }
             Preset::BackwardFacingStep => {
                 self.simulation = Simulation::from_preset(presets::backward_facing_step());
-            },
+            }
             Preset::LidDrivenCavity => {
                 self.simulation = Simulation::from_preset(presets::lid_driven_cavity());
-            },
+            }
         }
-        
     }
-    
+
     pub fn set_zoom(&mut self, zoom: f32) {
         self.next_cache.clear();
         self.vector_cache.clear();
@@ -78,7 +71,7 @@ impl Grid {
         self.vector_cache.clear();
         self.color_type = color_type
     }
-    
+
     pub fn set_show_velocity(&mut self, show_velocity: bool) {
         self.next_cache.clear();
         self.vector_cache.clear();
@@ -174,7 +167,7 @@ impl Program<()> for Grid {
 
             self.draw_cells(frame);
         });
-        
+
         let vectors = self.vector_cache.draw(renderer, bounds.size(), |frame| {
             if self.zoom == 0.0 {
                 frame.scale(100.0);
@@ -204,7 +197,6 @@ impl Grid {
             let speed_range = self.simulation.get_speed_range();
             let psi_range = self.simulation.get_psi_range();
 
-
             for x in 0..self.simulation.get_space_size()[0] {
                 for y in 0..self.simulation.get_space_size()[1] {
                     let pos_x = delta_x * (x as f32);
@@ -212,15 +204,21 @@ impl Grid {
                     let pos_y = delta_y * (reversed_y as f32);
 
                     let color: Color = match self.color_type {
-                        ColorType::Pressure => color_presure(self.simulation.get_cell(x, y), pressure_range),
-                        ColorType::Speed => color_speed(self.simulation.get_cell(x, y), speed_range),
-                        ColorType::Streamline => color_psi(self.simulation.get_cell(x, y), psi_range),
+                        ColorType::Pressure => {
+                            color_presure(self.simulation.get_cell(x, y), pressure_range)
+                        }
+                        ColorType::Speed => {
+                            color_speed(self.simulation.get_cell(x, y), speed_range)
+                        }
+                        ColorType::Streamline => {
+                            color_psi(self.simulation.get_cell(x, y), psi_range)
+                        }
                     };
 
                     frame.fill_rectangle(
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
-                        color
+                        color,
                     );
                 }
             }

@@ -75,7 +75,8 @@ impl Simulation {
     pub fn iterate_one_timestep(&mut self) {
         // Change boundary cells and fluid cells next to boundary cells
         // velocity, pressure, f, g
-        self.space_domain.update_boundary_conditions(); // O(n^2)
+        self.space_domain.update_boundary_velocities(); // O(n^2)
+        self.space_domain.update_boundary_pressures_and_fg();
 
         // Change fluid cells f, g
         self.update_fg(); // O(n^2)
@@ -89,7 +90,7 @@ impl Simulation {
         // Change fluid cells velocity
         self.update_velocity(); // O(n^2)
 
-        // Change fluid cells and boundary cell on the left and bottom
+        // Change psi of fluid cells and boundary cell on the left and bottom
         self.space_domain.update_psi(); // O(n^2)
 
         // For coloring
