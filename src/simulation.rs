@@ -19,8 +19,18 @@ pub struct Simulation {
 
 impl Default for Simulation {
     fn default() -> Self {
-        let preset = presets::backward_facing_step();
+        let preset = presets::cylinder_cross_flow();
+        Simulation::from_preset(preset)
+    }
+}
 
+impl Simulation {
+    pub fn new() -> Self {
+        let preset = presets::cylinder_cross_flow();
+        Simulation::from_preset(preset)
+    }
+
+    pub fn from_preset(preset: presets::SimulationPreset) -> Self {
         Self {
             space_domain: preset.space_domain,
             delta_time: preset.delta_time,
@@ -29,9 +39,7 @@ impl Default for Simulation {
             time: 0.0,
         }
     }
-}
 
-impl Simulation {
     pub fn get_delta_space(&self) -> [f32; 2] {
         self.space_domain.get_delta_space()
     }

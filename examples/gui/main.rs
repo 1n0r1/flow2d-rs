@@ -1,18 +1,19 @@
 mod grid;
 
-use grid::Grid;
+use grid::{Preset, ALLPRESET, Grid};
 
 use std::time::{Duration, Instant};
 
 use iced::executor;
 use iced::theme::{self, Theme};
 use iced::time;
-use iced::widget::{button, column, container, row, slider, text};
+use iced::widget::{button, column, container, row, slider, text, pick_list};
 use iced::window;
 use iced::{Alignment, Application, Command, Element, Length, Settings, Subscription};
 
+
 pub fn main() -> iced::Result {
-    EulerFluidSimulation::run(Settings {
+    Flow2dGUI::run(Settings {
         antialiasing: true,
         window: window::Settings {
             size: (1600, 900),
@@ -24,10 +25,12 @@ pub fn main() -> iced::Result {
 }
 
 #[derive(Default)]
-struct EulerFluidSimulation {
+struct Flow2dGUI {
     grid: Grid,
     is_playing: bool,
     speed: usize,
+    preset: Preset,
+    zoom: f32
 }
 
 #[derive(Debug, Clone)]
@@ -37,10 +40,27 @@ enum Message {
     Next,
     SpeedChanged(f32),
     Export,
+    PresetPicked(Preset),
+    ZoomChanged(f32),
     None,
 }
 
-impl Application for EulerFluidSimulation {
+
+impl std::fmt::Display for Preset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Preset::CylinderCrossFlow => "Cylinder Cross Flow",
+                Preset::BackwardFacingStep => "Backward Facing Step",
+                Preset::LidDrivenCavity => "Lid Driven Cavity"
+            }
+        )
+    }
+}
+
+impl Application for Flow2dGUI {
     type Message = Message;
     type Theme = Theme;
     type Executor = executor::Default;
@@ -50,6 +70,7 @@ impl Application for EulerFluidSimulation {
         (
             Self {
                 speed: 2,
+                zoom: 100.0,
                 ..Self::default()
             },
             Command::none(),
@@ -76,6 +97,14 @@ impl Application for EulerFluidSimulation {
             Message::Export => {
                 self.grid.export_image();
             }
+            Message::PresetPicked(preset) => {
+                self.preset = preset;
+                self.grid.set_preset(preset);
+            },
+            Message::ZoomChanged(zoom) => {
+                self.grid.set_zoom(zoom);
+                self.zoom = zoom;
+            },
             Message::None => {}
         }
         Command::none()
@@ -90,8 +119,7 @@ impl Application for EulerFluidSimulation {
     }
 
     fn view(&self) -> Element<Message> {
-        let selected_speed = self.speed;
-        let controls = view_controls(self.is_playing, selected_speed);
+        let controls = view_controls(self.is_playing, self.speed, self.preset, self.zoom);
 
         let content = column![
             self.grid.view().map(move |_| { Message::None }),
@@ -110,7 +138,7 @@ impl Application for EulerFluidSimulation {
     }
 }
 
-fn view_controls<'a>(is_playing: bool, speed: usize) -> Element<'a, Message> {
+fn view_controls<'a>(is_playing: bool, speed: usize, preset: Preset, zoom: f32) -> Element<'a, Message> {
     let playback_controls = row![
         button(if is_playing { "Pause" } else { "Play" }).on_press(Message::TogglePlayback),
         button("Next")
@@ -119,18 +147,29 @@ fn view_controls<'a>(is_playing: bool, speed: usize) -> Element<'a, Message> {
         button("Export Image")
             .on_press(Message::Export)
             .style(theme::Button::Secondary),
+        pick_list(ALLPRESET, Some(preset), Message::PresetPicked)
+            .padding(8)
+            .text_size(16),
     ]
     .spacing(10);
 
     let speed_controls = row![
         slider(1.0..=300.0, speed as f32, Message::SpeedChanged),
-        text(format!("x{speed}")).size(16),
+        text(format!("Speed x{speed}")).size(16),
     ]
     .width(Length::Fill)
     .align_items(Alignment::Center)
     .spacing(10);
 
-    row![playback_controls, speed_controls]
+    let zoom_controls = row![
+        slider(1.0..=1000.0, zoom as f32, Message::ZoomChanged),
+        text(format!("Zoom x{zoom}")).size(16),
+    ]
+    .width(Length::Fill)
+    .align_items(Alignment::Center)
+    .spacing(10);
+
+    row![playback_controls, column!(speed_controls, zoom_controls)]
         .padding(10)
         .spacing(20)
         .align_items(Alignment::Center)

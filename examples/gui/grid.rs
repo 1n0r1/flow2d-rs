@@ -1,7 +1,9 @@
 use flow2d_rs::cell::Cell;
 use flow2d_rs::cell::CellType;
 use flow2d_rs::simulation::Simulation;
+use flow2d_rs::presets;
 
+use iced::widget::canvas::path::lyon_path::geom::vector;
 use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Program, Stroke};
 use iced::{mouse, Color, Element, Length, Point, Renderer, Size, Theme};
 
@@ -13,9 +15,51 @@ pub struct Grid {
     next_cache: Cache,
     vector_cache: Cache,
     contour_cache: Cache,
+    zoom: f32,
 }
 
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Preset {
+    #[default]
+    CylinderCrossFlow,
+    BackwardFacingStep,
+    LidDrivenCavity
+}
+
+pub static ALLPRESET: &[Preset] = &[
+    Preset::CylinderCrossFlow,
+    Preset::BackwardFacingStep,
+    Preset::LidDrivenCavity
+];
+
 impl Grid {
+    pub fn set_preset(&mut self, preset: Preset) {
+        self.next_cache.clear();
+        self.vector_cache.clear();
+        self.contour_cache.clear();
+        match preset {
+            Preset::CylinderCrossFlow => {
+                self.simulation = Simulation::from_preset(presets::cylinder_cross_flow());
+            },
+            Preset::BackwardFacingStep => {
+                self.simulation = Simulation::from_preset(presets::backward_facing_step());
+            },
+            Preset::LidDrivenCavity => {
+                self.simulation = Simulation::from_preset(presets::lid_driven_cavity());
+            },
+        }
+        
+    }
+    
+    pub fn set_zoom(&mut self, zoom: f32) {
+        self.zoom = zoom;
+        self.next_cache.clear();
+        self.vector_cache.clear();
+        self.contour_cache.clear();
+    }
+
+
     pub fn get_time(&self) -> f32 {
         self.simulation.get_time()
     }
@@ -97,19 +141,17 @@ impl Program<()> for Grid {
         bounds: iced::Rectangle,
         _cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
-        const GRID_SCALE: f32 = 100.0;
-
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
-            frame.scale(GRID_SCALE);
+            frame.scale(self.zoom);
             self.draw_cells(frame);
         });
 
         let vectors = self.vector_cache.draw(renderer, bounds.size(), |frame| {
-            frame.scale(GRID_SCALE);
+            frame.scale(self.zoom);
             self.draw_velocity_vector(frame);
         });
 
-        vec![cells]
+        vec![cells, vectors]
     }
 }
 
