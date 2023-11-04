@@ -3,7 +3,6 @@ use flow2d_rs::cell::CellType;
 use flow2d_rs::simulation::Simulation;
 use flow2d_rs::presets;
 
-use iced::widget::canvas::path::lyon_path::geom::vector;
 use iced::widget::canvas::{Cache, Canvas, Frame, Geometry, Path, Program, Stroke};
 use iced::{mouse, Color, Element, Length, Point, Renderer, Size, Theme};
 
@@ -14,8 +13,9 @@ pub struct Grid {
     simulation: Simulation,
     next_cache: Cache,
     vector_cache: Cache,
-    contour_cache: Cache,
+    color_type: ColorType,
     zoom: f32,
+    show_velocity: bool
 }
 
 
@@ -33,11 +33,26 @@ pub static ALLPRESET: &[Preset] = &[
     Preset::LidDrivenCavity
 ];
 
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ColorType {
+    #[default]
+    Pressure,
+    Speed,
+    Streamline
+}
+
+pub static ALLCOLORTYPE: &[ColorType] = &[
+    ColorType::Pressure,
+    ColorType::Speed,
+    ColorType::Streamline
+];
+
+
 impl Grid {
     pub fn set_preset(&mut self, preset: Preset) {
         self.next_cache.clear();
         self.vector_cache.clear();
-        self.contour_cache.clear();
         match preset {
             Preset::CylinderCrossFlow => {
                 self.simulation = Simulation::from_preset(presets::cylinder_cross_flow());
@@ -53,12 +68,22 @@ impl Grid {
     }
     
     pub fn set_zoom(&mut self, zoom: f32) {
-        self.zoom = zoom;
         self.next_cache.clear();
         self.vector_cache.clear();
-        self.contour_cache.clear();
+        self.zoom = zoom;
     }
 
+    pub fn set_color_type(&mut self, color_type: ColorType) {
+        self.next_cache.clear();
+        self.vector_cache.clear();
+        self.color_type = color_type
+    }
+    
+    pub fn set_show_velocity(&mut self, show_velocity: bool) {
+        self.next_cache.clear();
+        self.vector_cache.clear();
+        self.show_velocity = show_velocity;
+    }
 
     pub fn get_time(&self) -> f32 {
         self.simulation.get_time()
@@ -75,7 +100,6 @@ impl Grid {
         self.simulation.iterate_one_timestep();
         self.next_cache.clear();
         self.vector_cache.clear();
-        self.contour_cache.clear();
     }
 
     pub fn export_image(&self) {
@@ -83,9 +107,9 @@ impl Grid {
         let space_size = self.simulation.get_space_size();
         let delta_space = self.simulation.get_delta_space();
 
-        let pressure_range = self.simulation.get_pressure_range();
+        // let pressure_range = self.simulation.get_pressure_range();
         let speed_range = self.simulation.get_speed_range();
-        let psi_range = self.simulation.get_psi_range();
+        // let psi_range = self.simulation.get_psi_range();
 
         let pixel_scale = [scale * delta_space[0], scale * delta_space[1]];
         let drawing_area = BitMapBackend::new(
@@ -142,16 +166,29 @@ impl Program<()> for Grid {
         _cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
         let cells = self.next_cache.draw(renderer, bounds.size(), |frame| {
-            frame.scale(self.zoom);
+            if self.zoom == 0.0 {
+                frame.scale(100.0);
+            } else {
+                frame.scale(self.zoom);
+            }
+
             self.draw_cells(frame);
         });
-
+        
         let vectors = self.vector_cache.draw(renderer, bounds.size(), |frame| {
-            frame.scale(self.zoom);
+            if self.zoom == 0.0 {
+                frame.scale(100.0);
+            } else {
+                frame.scale(self.zoom);
+            }
             self.draw_velocity_vector(frame);
         });
 
-        vec![cells, vectors]
+        if self.show_velocity {
+            vec![cells, vectors]
+        } else {
+            vec![cells]
+        }
     }
 }
 
@@ -167,17 +204,23 @@ impl Grid {
             let speed_range = self.simulation.get_speed_range();
             let psi_range = self.simulation.get_psi_range();
 
+
             for x in 0..self.simulation.get_space_size()[0] {
                 for y in 0..self.simulation.get_space_size()[1] {
                     let pos_x = delta_x * (x as f32);
                     let reversed_y = self.simulation.get_space_size()[1] - 1 - y;
                     let pos_y = delta_y * (reversed_y as f32);
+
+                    let color: Color = match self.color_type {
+                        ColorType::Pressure => color_presure(self.simulation.get_cell(x, y), pressure_range),
+                        ColorType::Speed => color_speed(self.simulation.get_cell(x, y), speed_range),
+                        ColorType::Streamline => color_psi(self.simulation.get_cell(x, y), psi_range),
+                    };
+
                     frame.fill_rectangle(
                         Point::new(pos_x, pos_y),
                         Size::new(delta_x, delta_y),
-                        // color_presure(cell, pressure_range),
-                        // color_speed(cell, speed_range),
-                        color_psi(self.simulation.get_cell(x, y), psi_range),
+                        color
                     );
                 }
             }

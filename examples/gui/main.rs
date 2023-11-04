@@ -1,13 +1,13 @@
 mod grid;
 
-use grid::{Preset, ALLPRESET, Grid};
+use grid::{Preset, ALLPRESET, Grid, ALLCOLORTYPE, ColorType};
 
 use std::time::{Duration, Instant};
 
-use iced::executor;
+use iced::{executor};
 use iced::theme::{self, Theme};
 use iced::time;
-use iced::widget::{button, column, container, row, slider, text, pick_list};
+use iced::widget::{button, column, container, row, slider, text, pick_list, checkbox};
 use iced::window;
 use iced::{Alignment, Application, Command, Element, Length, Settings, Subscription};
 
@@ -28,8 +28,10 @@ pub fn main() -> iced::Result {
 struct Flow2dGUI {
     grid: Grid,
     is_playing: bool,
+    is_velocity_enabled: bool,
     speed: usize,
     preset: Preset,
+    color_type: ColorType,
     zoom: f32
 }
 
@@ -41,6 +43,8 @@ enum Message {
     SpeedChanged(f32),
     Export,
     PresetPicked(Preset),
+    ToggleVelocity(bool),
+    ColorTypePicked(ColorType),
     ZoomChanged(f32),
     None,
 }
@@ -55,6 +59,20 @@ impl std::fmt::Display for Preset {
                 Preset::CylinderCrossFlow => "Cylinder Cross Flow",
                 Preset::BackwardFacingStep => "Backward Facing Step",
                 Preset::LidDrivenCavity => "Lid Driven Cavity"
+            }
+        )
+    }
+}
+
+impl std::fmt::Display for ColorType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ColorType::Pressure => "Pressure",
+                ColorType::Speed => "Speed",
+                ColorType::Streamline => "Streamline"
             }
         )
     }
@@ -90,9 +108,7 @@ impl Application for Flow2dGUI {
                 self.is_playing = !self.is_playing;
             }
             Message::SpeedChanged(speed) => {
-                if !self.is_playing {
-                    self.speed = speed.round() as usize;
-                }
+                self.speed = speed.round() as usize;
             }
             Message::Export => {
                 self.grid.export_image();
@@ -104,6 +120,14 @@ impl Application for Flow2dGUI {
             Message::ZoomChanged(zoom) => {
                 self.grid.set_zoom(zoom);
                 self.zoom = zoom;
+            },
+            Message::ColorTypePicked(color_type)  => {
+                self.color_type = color_type;
+                self.grid.set_color_type(color_type);
+            },
+            Message::ToggleVelocity(is_velocity_enabled) => {
+                self.is_velocity_enabled = is_velocity_enabled;
+                self.grid.set_show_velocity(is_velocity_enabled);
             },
             Message::None => {}
         }
@@ -119,7 +143,7 @@ impl Application for Flow2dGUI {
     }
 
     fn view(&self) -> Element<Message> {
-        let controls = view_controls(self.is_playing, self.speed, self.preset, self.zoom);
+        let controls = view_controls(self.is_playing, self.is_velocity_enabled, self.speed, self.preset, self.color_type, self.zoom);
 
         let content = column![
             self.grid.view().map(move |_| { Message::None }),
@@ -138,7 +162,7 @@ impl Application for Flow2dGUI {
     }
 }
 
-fn view_controls<'a>(is_playing: bool, speed: usize, preset: Preset, zoom: f32) -> Element<'a, Message> {
+fn view_controls<'a>(is_playing: bool, is_velocity_enabled: bool, speed: usize, preset: Preset, color_type: ColorType, zoom: f32) -> Element<'a, Message> {
     let playback_controls = row![
         button(if is_playing { "Pause" } else { "Play" }).on_press(Message::TogglePlayback),
         button("Next")
@@ -147,7 +171,14 @@ fn view_controls<'a>(is_playing: bool, speed: usize, preset: Preset, zoom: f32) 
         button("Export Image")
             .on_press(Message::Export)
             .style(theme::Button::Secondary),
+        checkbox("Velocity", is_velocity_enabled, Message::ToggleVelocity)
+            .size(16)
+            .spacing(5)
+            .text_size(16),
         pick_list(ALLPRESET, Some(preset), Message::PresetPicked)
+            .padding(8)
+            .text_size(16),
+        pick_list(ALLCOLORTYPE, Some(color_type), Message::ColorTypePicked)
             .padding(8)
             .text_size(16),
     ]
