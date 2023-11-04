@@ -84,7 +84,7 @@ impl Simulation {
         // Change fluid cells rhs
         self.update_rhs(); // O(n^2)
 
-        // Change fluid cells pressure
+        // Change fluid and boundary cells pressure
         self.solve_poisson_pressure_equation(); // O(m*n^2)
 
         // Change fluid cells velocity
@@ -107,38 +107,35 @@ impl Simulation {
 
         for x in 0..space_size[0] {
             for y in 0..space_size[1] {
-                match self.space_domain.get_cell(x, y).cell_type {
-                    CellType::FluidCell => {
-                        let right_cell_type: Option<CellType> = (x + 1 < space_size[0])
-                            .then(|| self.space_domain.get_cell(x + 1, y).cell_type);
-                        let top_cell_type: Option<CellType> = (y + 1 < space_size[1])
-                            .then(|| self.space_domain.get_cell(x, y + 1).cell_type);
+                if let CellType::FluidCell = self.space_domain.get_cell(x, y).cell_type {
+                    let right_cell_type: Option<CellType> = (x + 1 < space_size[0])
+                        .then(|| self.space_domain.get_cell(x + 1, y).cell_type);
+                    let top_cell_type: Option<CellType> = (y + 1 < space_size[1])
+                        .then(|| self.space_domain.get_cell(x, y + 1).cell_type);
 
-                        if let Some(right_cell_type) = right_cell_type {
-                            if let CellType::BoundaryConditionCell(_) = right_cell_type {
-                            } else {
-                                self.space_domain.get_cell_mut(x, y).velocity[0] =
-                                    self.space_domain.get_cell(x, y).f
-                                        - self.delta_time
-                                            * (self.space_domain.get_cell(x + 1, y).pressure
-                                                - self.space_domain.get_cell(x, y).pressure)
-                                            / delta_space[0]
-                            }
-                        }
-
-                        if let Some(top_cell_type) = top_cell_type {
-                            if let CellType::BoundaryConditionCell(_) = top_cell_type {
-                            } else {
-                                self.space_domain.get_cell_mut(x, y).velocity[1] =
-                                    self.space_domain.get_cell(x, y).g
-                                        - self.delta_time
-                                            * (self.space_domain.get_cell(x, y + 1).pressure
-                                                - self.space_domain.get_cell(x, y).pressure)
-                                            / delta_space[1]
-                            }
+                    if let Some(right_cell_type) = right_cell_type {
+                        if let CellType::BoundaryConditionCell(_) = right_cell_type {
+                        } else {
+                            self.space_domain.get_cell_mut(x, y).velocity[0] =
+                                self.space_domain.get_cell(x, y).f
+                                    - self.delta_time
+                                        * (self.space_domain.get_cell(x + 1, y).pressure
+                                            - self.space_domain.get_cell(x, y).pressure)
+                                        / delta_space[0]
                         }
                     }
-                    _ => {}
+
+                    if let Some(top_cell_type) = top_cell_type {
+                        if let CellType::BoundaryConditionCell(_) = top_cell_type {
+                        } else {
+                            self.space_domain.get_cell_mut(x, y).velocity[1] =
+                                self.space_domain.get_cell(x, y).g
+                                    - self.delta_time
+                                        * (self.space_domain.get_cell(x, y + 1).pressure
+                                            - self.space_domain.get_cell(x, y).pressure)
+                                        / delta_space[1]
+                        }
+                    }
                 }
             }
         }
@@ -177,20 +174,20 @@ impl Simulation {
                     (0..space_size[1])
                         .into_iter()
                         .map(|y| -> f32 {
-                            match self.space_domain.get_cell(x, y).cell_type {
-                                CellType::FluidCell => {
-                                    ((self.space_domain.get_cell(x + 1, y).pressure
+                            if let CellType::FluidCell = self.space_domain.get_cell(x, y).cell_type
+                            {
+                                ((self.space_domain.get_cell(x + 1, y).pressure
+                                    - 2.0 * self.space_domain.get_cell(x, y).pressure
+                                    + self.space_domain.get_cell(x - 1, y).pressure)
+                                    / delta_space[0].powi(2)
+                                    + (self.space_domain.get_cell(x, y + 1).pressure
                                         - 2.0 * self.space_domain.get_cell(x, y).pressure
-                                        + self.space_domain.get_cell(x - 1, y).pressure)
-                                        / delta_space[0].powi(2)
-                                        + (self.space_domain.get_cell(x, y + 1).pressure
-                                            - 2.0 * self.space_domain.get_cell(x, y).pressure
-                                            + self.space_domain.get_cell(x, y - 1).pressure)
-                                            / delta_space[1].powi(2)
-                                        - self.space_domain.get_cell(x, y).rhs)
-                                        .powi(2)
-                                }
-                                _ => 0.0,
+                                        + self.space_domain.get_cell(x, y - 1).pressure)
+                                        / delta_space[1].powi(2)
+                                    - self.space_domain.get_cell(x, y).rhs)
+                                    .powi(2)
+                            } else {
+                                0.0
                             }
                         })
                         .sum()
@@ -209,21 +206,18 @@ impl Simulation {
 
             for x in 0..space_size[0] {
                 for y in 0..space_size[1] {
-                    match self.space_domain.get_cell(x, y).cell_type {
-                        CellType::FluidCell => {
-                            self.space_domain.get_cell_mut(x, y).pressure = (1.0 - OMEGA)
-                                * self.space_domain.get_cell(x, y).pressure
-                                + OMEGA
-                                    * ((self.space_domain.get_cell(x + 1, y).pressure
-                                        + (self.space_domain.get_cell(x - 1, y).pressure))
-                                        / delta_space[0].powi(2)
-                                        + (self.space_domain.get_cell(x, y + 1).pressure
-                                            + (self.space_domain.get_cell(x, y - 1).pressure))
-                                            / delta_space[1].powi(2)
-                                        - self.space_domain.get_cell(x, y).rhs)
-                                    / (2.0 / delta_space[0].powi(2) + 2.0 / delta_space[1].powi(2));
-                        }
-                        _ => {}
+                    if let CellType::FluidCell = self.space_domain.get_cell(x, y).cell_type {
+                        self.space_domain.get_cell_mut(x, y).pressure = (1.0 - OMEGA)
+                            * self.space_domain.get_cell(x, y).pressure
+                            + OMEGA
+                                * ((self.space_domain.get_cell(x + 1, y).pressure
+                                    + (self.space_domain.get_cell(x - 1, y).pressure))
+                                    / delta_space[0].powi(2)
+                                    + (self.space_domain.get_cell(x, y + 1).pressure
+                                        + (self.space_domain.get_cell(x, y - 1).pressure))
+                                        / delta_space[1].powi(2)
+                                    - self.space_domain.get_cell(x, y).rhs)
+                                / (2.0 / delta_space[0].powi(2) + 2.0 / delta_space[1].powi(2));
                     }
                 }
             }
@@ -276,18 +270,15 @@ impl Simulation {
 
         for x in 0..space_size[0] {
             for y in 0..space_size[1] {
-                match self.space_domain.get_cell(x, y).cell_type {
-                    CellType::FluidCell => {
-                        self.space_domain.get_cell_mut(x, y).rhs =
-                            ((self.space_domain.get_cell(x, y).f
-                                - self.space_domain.get_cell(x - 1, y).f)
-                                / delta_space[0]
-                                + (self.space_domain.get_cell(x, y).g
-                                    - self.space_domain.get_cell(x, y - 1).g)
-                                    / delta_space[1])
-                                / self.delta_time;
-                    }
-                    _ => {}
+                if let CellType::FluidCell = self.space_domain.get_cell(x, y).cell_type {
+                    self.space_domain.get_cell_mut(x, y).rhs =
+                        ((self.space_domain.get_cell(x, y).f
+                            - self.space_domain.get_cell(x - 1, y).f)
+                            / delta_space[0]
+                            + (self.space_domain.get_cell(x, y).g
+                                - self.space_domain.get_cell(x, y - 1).g)
+                                / delta_space[1])
+                            / self.delta_time;
                 }
             }
         }
@@ -297,44 +288,38 @@ impl Simulation {
         let space_size = self.space_domain.get_space_size();
         for x in 0..space_size[0] {
             for y in 0..space_size[1] {
-                match self.space_domain.get_cell(x, y).cell_type {
-                    CellType::FluidCell => {
-                        let right_cell_type: Option<CellType> = (x + 1 < space_size[0])
-                            .then(|| self.space_domain.get_cell(x + 1, y).cell_type);
-                        let top_cell_type: Option<CellType> = (y + 1 < space_size[1])
-                            .then(|| self.space_domain.get_cell(x, y + 1).cell_type);
-
-                        if let Some(right_cell_type) = right_cell_type {
-                            if let CellType::BoundaryConditionCell(_) = right_cell_type {
-                            } else {
-                                self.space_domain.get_cell_mut(x, y).f =
-                                    self.space_domain.get_cell(x, y).velocity[0]
-                                        + self.delta_time
-                                            * ((self.space_domain.d2udx2(x, y)
-                                                + self.space_domain.d2udy2(x, y))
-                                                / self.reynolds
-                                                - self.space_domain.du2dx(x, y)
-                                                - self.space_domain.duvdy(x, y)
-                                                + self.acceleration[0]);
-                            }
-                        }
-
-                        if let Some(top_cell_type) = top_cell_type {
-                            if let CellType::BoundaryConditionCell(_) = top_cell_type {
-                            } else {
-                                self.space_domain.get_cell_mut(x, y).g =
-                                    self.space_domain.get_cell(x, y).velocity[1]
-                                        + self.delta_time
-                                            * ((self.space_domain.d2vdx2(x, y)
-                                                + self.space_domain.d2vdy2(x, y))
-                                                / self.reynolds
-                                                - self.space_domain.duvdx(x, y)
-                                                - self.space_domain.dv2dy(x, y)
-                                                + self.acceleration[1])
-                            }
-                        }
+                if let CellType::FluidCell = self.space_domain.get_cell(x, y).cell_type {
+                    if let Some(CellType::FluidCell) = self
+                        .space_domain
+                        .try_get_cell(x + 1, y)
+                        .map(|cell| cell.cell_type)
+                    {
+                        self.space_domain.get_cell_mut(x, y).f =
+                            self.space_domain.get_cell(x, y).velocity[0]
+                                + self.delta_time
+                                    * ((self.space_domain.d2udx2(x, y)
+                                        + self.space_domain.d2udy2(x, y))
+                                        / self.reynolds
+                                        - self.space_domain.du2dx(x, y)
+                                        - self.space_domain.duvdy(x, y)
+                                        + self.acceleration[0]);
                     }
-                    _ => {}
+
+                    if let Some(CellType::FluidCell) = self
+                        .space_domain
+                        .try_get_cell(x, y + 1)
+                        .map(|cell| cell.cell_type)
+                    {
+                        self.space_domain.get_cell_mut(x, y).g =
+                            self.space_domain.get_cell(x, y).velocity[1]
+                                + self.delta_time
+                                    * ((self.space_domain.d2vdx2(x, y)
+                                        + self.space_domain.d2vdy2(x, y))
+                                        / self.reynolds
+                                        - self.space_domain.duvdx(x, y)
+                                        - self.space_domain.dv2dy(x, y)
+                                        + self.acceleration[1])
+                    }
                 }
             }
         }

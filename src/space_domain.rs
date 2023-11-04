@@ -71,7 +71,7 @@ impl SpaceDomain {
                 (self.get_cell(x, y).velocity[0] + self.get_cell(x - 1, y).velocity[0]) / 2.0,
                 (self.get_cell(x, y).velocity[1] + self.get_cell(x, y - 1).velocity[1]) / 2.0,
             ],
-            _ => panic!("Can only call get_centered_velocity on Fluid Cell")
+            _ => panic!("Can only call get_centered_velocity on Fluid Cell"),
         }
     }
 }
