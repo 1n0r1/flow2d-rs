@@ -147,10 +147,8 @@ impl Simulation {
 
         let mut fluid_cell_count = 0;
         let mut initial_pressure_norm: f32 = (0..space_size[0])
-            .into_iter()
             .map(|x| -> f32 {
                 (0..space_size[1])
-                    .into_iter()
                     .map(|y| -> f32 {
                         match self.space_domain.get_cell(x, y).cell_type {
                             CellType::FluidCell => {
@@ -169,10 +167,8 @@ impl Simulation {
 
         for _ in 0..ITR_MAX {
             let mut residual_norm: f32 = (0..space_size[0])
-                .into_iter()
                 .map(|x| -> f32 {
                     (0..space_size[1])
-                        .into_iter()
                         .map(|y| -> f32 {
                             if let CellType::FluidCell = self.space_domain.get_cell(x, y).cell_type
                             {

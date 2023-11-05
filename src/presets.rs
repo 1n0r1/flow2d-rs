@@ -204,8 +204,8 @@ pub fn cylinder_cross_flow() -> SimulationPreset {
     let radius = 5.0;
     let center = [20, 20];
 
-    for xi in 14..26 as i32 {
-        for yi in 14..26 as i32 {
+    for xi in 14..26 {
+        for yi in 14..26 {
             let x_dist = xi - center[0];
             let y_dist = yi - center[1];
             let distance = ((x_dist * x_dist + y_dist * y_dist) as f32).sqrt();

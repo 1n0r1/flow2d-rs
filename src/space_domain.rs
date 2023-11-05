@@ -85,7 +85,7 @@ impl SpaceDomain {
     pub fn update_psi(&mut self) {
         self.psi_range = [0.0, 0.0];
 
-        (0..self.space_size[0]).into_iter().for_each(|x| {
+        (0..self.space_size[0]).for_each(|x| {
             self.get_cell_mut(x, 0).psi = 0.0;
 
             for y in 1..self.space_size[1] {
