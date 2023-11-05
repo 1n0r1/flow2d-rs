@@ -2,7 +2,7 @@
 
 
 # flow2d-rs
-Eulerian Fluid Simulation written in Rust.
+Computational fluid dynamics library written in Rust
 
 Backward facing step
 
