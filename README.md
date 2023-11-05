@@ -4,6 +4,10 @@
 # flow2d-rs
 Computational fluid dynamics library written in Rust
 
+
+https://github.com/1n0r1/flow2d-rs/assets/80285371/36516766-5e4f-436e-8b6b-90dad9e28668
+
+
 Backward facing step
 
 <img src="https://github.com/1n0r1/flow2d-rs/assets/80285371/49c0a938-7f22-43f3-a640-57d9d9d6be14" alt="backward facing step" width="1000"/>
