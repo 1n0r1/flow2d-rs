@@ -49,9 +49,15 @@ Lid-driven cavity
 ```
 Refer to `./src/presets.rs` for setting up other simulations.
 
+## Use this in your project
+Add `flow2d_rs` as a dependency in your `Cargo.toml`
+
+```toml
+flow2d_rs = "0.1.0"
+```
+
 ## Dependencies
-- [Iced](https://github.com/iced-rs/iced) - for GUI
-- [plotters](https://github.com/plotters-rs/plotters) - for exporting images
+- [Rayon](https://github.com/rayon-rs/rayon) - to parallelize computation
 
 
 ## References
