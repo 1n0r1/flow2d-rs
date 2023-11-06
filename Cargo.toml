@@ -9,6 +9,9 @@ repository = "https://github.com/1n0r1/flow2d-rs"
 readme = "README.md"
 categories = ["science", "simulation", "aerospace::simulation"]
 keywords = ["physics", "cfd", "fluid"]
+exclude = [
+    "img/*",
+]
 
 [profile.dev]
 opt-level = 3
