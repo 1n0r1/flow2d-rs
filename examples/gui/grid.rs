@@ -79,7 +79,7 @@ impl Grid {
     }
 
     pub fn get_time(&self) -> f32 {
-        self.simulation.get_time()
+        self.simulation.time()
     }
 
     pub fn view(&self) -> Element<()> {
@@ -97,11 +97,11 @@ impl Grid {
 
     pub fn export_image(&self) {
         let scale = 20.0;
-        let space_size = self.simulation.get_space_size();
-        let delta_space = self.simulation.get_delta_space();
+        let space_size = self.simulation.space_size();
+        let delta_space = self.simulation.delta_space();
 
         // let pressure_range = self.simulation.get_pressure_range();
-        let speed_range = self.simulation.get_speed_range();
+        let speed_range = self.simulation.speed_range();
         // let psi_range = self.simulation.get_psi_range();
 
         let pixel_scale = [scale * delta_space[0], scale * delta_space[1]];
@@ -115,10 +115,10 @@ impl Grid {
         .into_drawing_area();
         drawing_area.fill(&WHITE).unwrap();
 
-        for x in 0..self.simulation.get_space_size()[0] {
-            for y in 0..self.simulation.get_space_size()[1] {
+        for x in 0..self.simulation.space_size()[0] {
+            for y in 0..self.simulation.space_size()[1] {
                 let pos_x = x as i32;
-                let reversed_y = self.simulation.get_space_size()[1] - 1 - y;
+                let reversed_y = self.simulation.space_size()[1] - 1 - y;
                 let pos_y = reversed_y as i32;
                 let color = color_speed(self.simulation.get_cell(x, y), speed_range);
                 drawing_area
@@ -191,16 +191,16 @@ impl Grid {
         frame.fill(&background, Color::from_rgb8(0x40, 0x44, 0x4B));
 
         frame.with_save(|frame| {
-            let delta_x = self.simulation.get_delta_space()[0];
-            let delta_y = self.simulation.get_delta_space()[1];
-            let pressure_range = self.simulation.get_pressure_range();
-            let speed_range = self.simulation.get_speed_range();
-            let psi_range = self.simulation.get_psi_range();
+            let delta_x = self.simulation.delta_space()[0];
+            let delta_y = self.simulation.delta_space()[1];
+            let pressure_range = self.simulation.pressure_range();
+            let speed_range = self.simulation.speed_range();
+            let psi_range = self.simulation.psi_range();
 
-            for x in 0..self.simulation.get_space_size()[0] {
-                for y in 0..self.simulation.get_space_size()[1] {
+            for x in 0..self.simulation.space_size()[0] {
+                for y in 0..self.simulation.space_size()[1] {
                     let pos_x = delta_x * (x as f32);
-                    let reversed_y = self.simulation.get_space_size()[1] - 1 - y;
+                    let reversed_y = self.simulation.space_size()[1] - 1 - y;
                     let pos_y = delta_y * (reversed_y as f32);
 
                     let color: Color = match self.color_type {
@@ -226,16 +226,16 @@ impl Grid {
     }
 
     fn draw_velocity_vector(&self, frame: &mut Frame) {
-        let delta_x = self.simulation.get_delta_space()[0];
-        let delta_y = self.simulation.get_delta_space()[1];
-        for x in 0..self.simulation.get_space_size()[0] {
-            for y in 0..self.simulation.get_space_size()[1] {
+        let delta_x = self.simulation.delta_space()[0];
+        let delta_y = self.simulation.delta_space()[1];
+        for x in 0..self.simulation.space_size()[0] {
+            for y in 0..self.simulation.space_size()[1] {
                 // if x % 2 != 0 || y % 2 != 0 {
                 //     continue;
                 // }
                 if let CellType::FluidCell = self.simulation.get_cell(x, y).cell_type {
                     let pos_x = delta_x * (x as f32);
-                    let reversed_y = self.simulation.get_space_size()[1] - 1 - y;
+                    let reversed_y = self.simulation.space_size()[1] - 1 - y;
                     let pos_y = delta_y * (reversed_y as f32);
 
                     let velocity_scale = 0.1;

@@ -1,7 +1,14 @@
 [package]
 name = "flow2d_rs"
+description = "A computational fluid dynamics (CFD) library"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+homepage = "https://github.com/1n0r1/flow2d-rs"
+repository = "https://github.com/1n0r1/flow2d-rs"
+readme = "README.md"
+categories = ["science", "simulation", "aerospace::simulation"]
+keywords = ["physics", "cfd", "fluid"]
 
 [profile.dev]
 opt-level = 3

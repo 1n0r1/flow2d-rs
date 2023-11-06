@@ -40,32 +40,32 @@ impl Simulation {
         }
     }
 
-    pub fn get_delta_space(&self) -> [f32; 2] {
-        self.space_domain.get_delta_space()
+    pub fn delta_space(&self) -> [f32; 2] {
+        self.space_domain.delta_space()
     }
 
-    pub fn get_space_size(&self) -> [usize; 2] {
-        self.space_domain.get_space_size()
+    pub fn space_size(&self) -> [usize; 2] {
+        self.space_domain.space_size()
+    }
+
+    pub fn time(&self) -> f32 {
+        self.time
+    }
+
+    pub fn pressure_range(&self) -> [f32; 2] {
+        self.space_domain.pressure_range()
+    }
+
+    pub fn speed_range(&self) -> [f32; 2] {
+        self.space_domain.speed_range()
+    }
+
+    pub fn psi_range(&self) -> [f32; 2] {
+        self.space_domain.psi_range()
     }
 
     pub fn get_cell(&self, x: usize, y: usize) -> &Cell {
         self.space_domain.get_cell(x, y)
-    }
-
-    pub fn get_time(&self) -> f32 {
-        self.time
-    }
-
-    pub fn get_pressure_range(&self) -> [f32; 2] {
-        self.space_domain.get_pressure_range()
-    }
-
-    pub fn get_speed_range(&self) -> [f32; 2] {
-        self.space_domain.get_speed_range()
-    }
-
-    pub fn get_psi_range(&self) -> [f32; 2] {
-        self.space_domain.get_psi_range()
     }
 
     pub fn get_centered_velocity(&self, x: usize, y: usize) -> [f32; 2] {
@@ -102,8 +102,8 @@ impl Simulation {
 
 impl Simulation {
     fn update_velocity(&mut self) {
-        let space_size = self.space_domain.get_space_size();
-        let delta_space = self.space_domain.get_delta_space();
+        let space_size = self.space_domain.space_size();
+        let delta_space = self.space_domain.delta_space();
 
         for x in 0..space_size[0] {
             for y in 0..space_size[1] {
@@ -142,8 +142,8 @@ impl Simulation {
     }
 
     fn solve_poisson_pressure_equation(&mut self) {
-        let space_size = self.space_domain.get_space_size();
-        let delta_space = self.space_domain.get_delta_space();
+        let space_size = self.space_domain.space_size();
+        let delta_space = self.space_domain.delta_space();
 
         let mut fluid_cell_count = 0;
         let mut initial_pressure_norm: f32 = (0..space_size[0])
@@ -221,7 +221,7 @@ impl Simulation {
     }
 
     fn update_pressures_for_boundary_cells(&mut self) {
-        let space_size = self.space_domain.get_space_size();
+        let space_size = self.space_domain.space_size();
 
         for x in 0..space_size[0] {
             for y in 0..space_size[1] {
@@ -261,8 +261,8 @@ impl Simulation {
     }
 
     fn update_rhs(&mut self) {
-        let space_size = self.space_domain.get_space_size();
-        let delta_space = self.space_domain.get_delta_space();
+        let space_size = self.space_domain.space_size();
+        let delta_space = self.space_domain.delta_space();
 
         for x in 0..space_size[0] {
             for y in 0..space_size[1] {
@@ -281,7 +281,7 @@ impl Simulation {
     }
 
     fn update_fg(&mut self) {
-        let space_size = self.space_domain.get_space_size();
+        let space_size = self.space_domain.space_size();
         for x in 0..space_size[0] {
             for y in 0..space_size[1] {
                 if let CellType::FluidCell = self.space_domain.get_cell(x, y).cell_type {

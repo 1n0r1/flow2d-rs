@@ -33,23 +33,23 @@ impl SpaceDomain {
 
 // Get functions
 impl SpaceDomain {
-    pub fn get_delta_space(&self) -> [f32; 2] {
+    pub fn delta_space(&self) -> [f32; 2] {
         self.delta_space
     }
 
-    pub fn get_space_size(&self) -> [usize; 2] {
+    pub fn space_size(&self) -> [usize; 2] {
         self.space_size
     }
 
-    pub fn get_pressure_range(&self) -> [f32; 2] {
+    pub fn pressure_range(&self) -> [f32; 2] {
         self.pressure_range
     }
 
-    pub fn get_speed_range(&self) -> [f32; 2] {
+    pub fn speed_range(&self) -> [f32; 2] {
         self.speed_range
     }
 
-    pub fn get_psi_range(&self) -> [f32; 2] {
+    pub fn psi_range(&self) -> [f32; 2] {
         self.psi_range
     }
 
